@@ -3,6 +3,7 @@ name = "topos"
 description = "State what a system allows, and check it against what was intended."
 readme = "README.md"
 license = "MIT"
+# Differs from ruff.toml's py311 target-version until the conventions witness fix lands.
 requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
