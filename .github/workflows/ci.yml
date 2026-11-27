@@ -17,7 +17,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Python and git versions
         run: python3 --version && git --version
@@ -37,7 +39,9 @@ jobs:
       JSONSCHEMA_VERSION: 4.26.0
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install jsonschema
         run: python3 -m pip install --user "jsonschema==${JSONSCHEMA_VERSION}"
@@ -54,7 +58,9 @@ jobs:
       RUFF_VERSION: 0.16.9
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install ruff
         run: python3 -m pip install --user "ruff==${RUFF_VERSION}"
