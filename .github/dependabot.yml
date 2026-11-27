@@ -1,5 +1,5 @@
 # Dependency updates for this repository (SC-IN-2): GitHub Actions (the SHA pins in
-# .github/workflows/, SC-GHA-1) and the Python test pins in requirements-test.txt.
+# .github/workflows/, SC-GHA-1) and the Python dependencies locked in uv.lock.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -12,7 +12,7 @@ updates:
     groups:
       actions:
         patterns: ["*"]
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /
     schedule:
       interval: weekly

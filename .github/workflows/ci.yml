@@ -30,46 +30,49 @@ jobs:
       - name: Witness — each check refuses a seeded violation
         run: python3 -I .conventions/baseline/tools/conventions.py witness
 
+  # The jobs below install Python and uv from mise.toml through jdx/mise-action, so CI runs the
+  # versions a local `mise install` gives, and their Python dependencies from uv.lock.
+
   # Every example validates against the schemas, and every id and witness path in it resolves.
   examples:
     name: Examples match the schemas
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      JSONSCHEMA_VERSION: 4.26.0
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install jsonschema
-        run: python3 -m pip install --user "jsonschema==${JSONSCHEMA_VERSION}"
+      - name: Install mise tools (Python, uv)
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
+        with:
+          version: 2026.11.10
 
       - name: Check examples
-        run: python3 -I tools/check_examples.py
+        run: uv run --locked --only-group test python -I tools/check_examples.py
 
   # Every .py file, from the root ruff.toml (the baseline's canonical configuration, PY-LINT-1).
   python-lint:
     name: Python lint (ruff, every .py)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      RUFF_VERSION: 0.16.9
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Install ruff
-        run: python3 -m pip install --user "ruff==${RUFF_VERSION}"
+      - name: Install mise tools (Python, uv)
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
+        with:
+          version: 2026.11.10
 
       - name: Lint
-        run: ruff check --no-cache .
+        run: uv run --locked --only-group lint ruff check --no-cache .
 
       - name: Format
-        run: ruff format --check --no-cache .
+        run: uv run --locked --only-group lint ruff format --check --no-cache .
 
   # The Python tests, including the extractor's, against a real PostgreSQL holding synthetic
   # schemas only. TOPOS_REQUIRE_DATABASE makes a missing server fail rather than skip.
@@ -95,11 +98,17 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install mise tools (Python, uv)
+        uses: jdx/mise-action@90f833d396d0cc3674b631d2d225e306476c303a # v5.2.10
+        with:
+          version: 2026.11.10
+
+      # --locked fails if uv.lock is not what pyproject.toml resolves to (SC-IN-3).
       - name: Install
-        run: python3 -m pip install --user -r requirements-test.txt && python3 -m pip install --user --no-deps -e .
+        run: uv sync --locked
 
       - name: Test
-        run: python3 -m pytest
+        run: uv run --locked pytest
 
   ci-success:
     name: CI Success
