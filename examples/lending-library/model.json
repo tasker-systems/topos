@@ -1,10 +1,14 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "target": { "name": "lending-library", "revision": "synthetic-1", "kind": "software" },
   "abstraction": {
     "owner": "example-owner",
     "statement": "A book's state is its circulation status. Who holds a loan is a stored attribute, not a state.",
     "excluded": ["due dates and fines", "multiple copies of one title"]
+  },
+  "area_of_concern": {
+    "name": "circulation",
+    "sha256": "ac7aee29f7f1db78cfe487f4afb77e090e216472c75aca533da741972bf21e67"
   },
   "roles": [
     { "id": "member", "provenance": { "kind": "extracted", "source": "src/roles.rs:3" } },
@@ -13,17 +17,17 @@
   "entities": [
     {
       "id": "book",
-      "states": [
-        { "id": "available" },
-        { "id": "on_loan" },
-        { "id": "lost", "terminal": true }
-      ],
+      "states": [{ "id": "available" }, { "id": "on_loan" }, { "id": "lost", "terminal": true }],
       "initial": ["available"],
       "provenance": { "kind": "extracted", "source": "src/book.rs:10" }
     }
   ],
   "attributes": [
-    { "id": "loan.borrower", "entity": "book", "provenance": { "kind": "extracted", "source": "migrations/0001_loans.sql:4" } }
+    {
+      "id": "loan.borrower",
+      "entity": "book",
+      "provenance": { "kind": "extracted", "source": "migrations/0001_loans.sql:4" }
+    }
   ],
   "transitions": [
     {
@@ -41,7 +45,10 @@
       "from": "on_loan",
       "to": "available",
       "actor_roles": ["member", "librarian"],
-      "guard": { "description": "the actor is the borrower, or is a librarian", "reads": ["loan.borrower"] },
+      "guard": {
+        "description": "the actor is the borrower, or is a librarian",
+        "reads": ["loan.borrower"]
+      },
       "writes": ["loan.borrower"],
       "provenance": { "kind": "extracted", "source": "src/handlers/return.rs:9" }
     },
@@ -51,12 +58,83 @@
       "from": "on_loan",
       "to": "lost",
       "actor_roles": ["member", "librarian"],
-      "guard": { "description": "reuses the return guard: the actor is the borrower, or is a librarian", "reads": ["loan.borrower"] },
+      "guard": {
+        "description": "reuses the return guard: the actor is the borrower, or is a librarian",
+        "reads": ["loan.borrower"]
+      },
       "provenance": {
         "kind": "inferred",
         "proposer": "example-agent",
         "confidence": 0.8,
         "basis": "the handler calls the same guard function as return; the call is through a trait object, so extraction alone could not resolve it"
+      }
+    }
+  ],
+  "actor_classes": [
+    {
+      "id": "member.borrower",
+      "description": "a member who holds the loan",
+      "axes": { "role": "member", "holds_loan": true },
+      "provenance": { "kind": "extracted", "source": "src/roles.rs:3" }
+    },
+    {
+      "id": "member.other",
+      "description": "a member who does not hold the loan",
+      "axes": { "role": "member", "holds_loan": false },
+      "provenance": { "kind": "extracted", "source": "src/roles.rs:3" }
+    },
+    {
+      "id": "librarian",
+      "axes": { "role": "librarian", "holds_loan": false },
+      "provenance": { "kind": "extracted", "source": "src/roles.rs:4" }
+    }
+  ],
+  "object_classes": [
+    {
+      "id": "book.on_loan",
+      "entity": "book",
+      "axes": { "state": "on_loan" },
+      "provenance": { "kind": "extracted", "source": "src/book.rs:10" }
+    }
+  ],
+  "access": [
+    {
+      "id": "return.member.borrower",
+      "actor_class": "member.borrower",
+      "action": "return",
+      "object_class": "book.on_loan",
+      "allowed": true,
+      "provenance": {
+        "kind": "probed",
+        "probe": "example-probe 0.1",
+        "call": "can_return(actor := <member.borrower>, book := <on_loan>)",
+        "fixture": "synthetic-1"
+      }
+    },
+    {
+      "id": "return.member.other",
+      "actor_class": "member.other",
+      "action": "return",
+      "object_class": "book.on_loan",
+      "allowed": false,
+      "provenance": {
+        "kind": "probed",
+        "probe": "example-probe 0.1",
+        "call": "can_return(actor := <member.other>, book := <on_loan>)",
+        "fixture": "synthetic-1"
+      }
+    },
+    {
+      "id": "return.librarian",
+      "actor_class": "librarian",
+      "action": "return",
+      "object_class": "book.on_loan",
+      "allowed": true,
+      "provenance": {
+        "kind": "probed",
+        "probe": "example-probe 0.1",
+        "call": "can_return(actor := <librarian>, book := <on_loan>)",
+        "fixture": "synthetic-1"
       }
     }
   ]

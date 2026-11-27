@@ -1,13 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tasker-systems/topos/schema/system-model.schema.json",
-  "title": "Topos system model (draft 0.1)",
-  "description": "What a target system allows, at one pinned revision and under one declared abstraction: entities and their states, guarded transitions, the persistent attributes transitions read and write, and grants of capabilities to roles. Every element carries provenance, so an extracted element can always be told apart from an inferred one.",
+  "title": "Topos system model (0.2)",
+  "description": "What a target system allows, at one pinned revision and under one declared abstraction: entities and their states, guarded transitions, the persistent attributes transitions read and write, grants of capabilities to roles, and access facts relating situated actors to actions on objects. Every element carries provenance, so an extracted, inferred or probed element can always be told apart. The observe stage emits this document and never reads an intent.",
   "type": "object",
-  "required": ["schema_version", "target", "abstraction", "roles", "entities", "attributes", "transitions"],
+  "required": [
+    "schema_version",
+    "target",
+    "abstraction",
+    "roles",
+    "entities",
+    "attributes",
+    "transitions"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "0.1" },
+    "schema_version": { "const": "0.2" },
     "target": {
       "description": "The system modeled, at the revision modeled.",
       "type": "object",
@@ -15,7 +23,11 @@
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "revision": { "description": "An immutable identifier, such as a full commit SHA.", "type": "string", "minLength": 1 },
+        "revision": {
+          "description": "An immutable identifier, such as a full commit SHA.",
+          "type": "string",
+          "minLength": 1
+        },
         "kind": { "enum": ["software", "rules"] }
       }
     },
@@ -27,7 +39,21 @@
       "properties": {
         "owner": { "description": "Who owns this choice.", "type": "string", "minLength": 1 },
         "statement": { "type": "string", "minLength": 1 },
-        "excluded": { "description": "What the abstraction deliberately collapses or leaves out.", "type": "array", "items": { "type": "string" } }
+        "excluded": {
+          "description": "What the abstraction deliberately collapses or leaves out.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "area_of_concern": {
+      "description": "The area-of-concern declaration this model was observed under, by name and content hash. Absent when the model covers the whole target.",
+      "type": "object",
+      "required": ["name", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
       }
     },
     "roles": {
@@ -62,7 +88,11 @@
               "additionalProperties": false,
               "properties": {
                 "id": { "$ref": "#/$defs/id" },
-                "terminal": { "description": "No transition leaves this state; it is an absorbing outcome.", "type": "boolean", "default": false }
+                "terminal": {
+                  "description": "No transition leaves this state; it is an absorbing outcome.",
+                  "type": "boolean",
+                  "default": false
+                }
               }
             }
           },
@@ -97,7 +127,11 @@
           "entity": { "$ref": "#/$defs/id" },
           "from": { "$ref": "#/$defs/id" },
           "to": { "$ref": "#/$defs/id" },
-          "actor_roles": { "description": "Roles that may fire this transition, as the target enforces it, not as intended.", "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "actor_roles": {
+            "description": "Roles that may fire this transition, as the target enforces it, not as intended.",
+            "type": "array",
+            "items": { "$ref": "#/$defs/id" }
+          },
           "guard": {
             "type": "object",
             "additionalProperties": false,
@@ -139,12 +173,67 @@
           "provenance": { "$ref": "#/$defs/provenance" }
         }
       }
+    },
+    "actor_classes": {
+      "description": "Situated actors: who acts, described by the axes that place them, such as a role held at a position relative to an anchor. An access fact names one.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "axes", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "axes": {
+            "description": "The value of each declared axis for this class, for example {\"role\": \"member\", \"position\": \"child\"}.",
+            "type": "object",
+            "additionalProperties": { "type": ["string", "boolean", "number", "null"] }
+          },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "object_classes": {
+      "description": "Kinds of object an access fact is about, optionally tied to an entity.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "entity": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "axes": {
+            "type": "object",
+            "additionalProperties": { "type": ["string", "boolean", "number", "null"] }
+          },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "access": {
+      "description": "The access relation: whether an actor class may perform an action on an object class, as the target enforces it. Permission questions are relations, not transitions.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "actor_class", "action", "object_class", "allowed", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "actor_class": { "$ref": "#/$defs/id" },
+          "action": { "$ref": "#/$defs/id" },
+          "object_class": { "$ref": "#/$defs/id" },
+          "allowed": { "type": "boolean" },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
     }
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" },
     "provenance": {
-      "description": "Where an element came from. `extracted` means it was read directly from the target, and names the source. `inferred` means it was proposed by an agent, a model or a person, and names the proposer and a confidence.",
+      "description": "Where an element came from. `extracted` means it was read directly from the target, and names the source. `inferred` means it was proposed by an agent, a model or a person, and names the proposer and a confidence. `probed` means it was observed by executing the target, and names the probe and the call, so it can be reproduced.",
       "oneOf": [
         {
           "type": "object",
@@ -152,7 +241,11 @@
           "additionalProperties": false,
           "properties": {
             "kind": { "const": "extracted" },
-            "source": { "description": "A path, optionally with a line, or a symbol in the target at the pinned revision.", "type": "string", "minLength": 1 },
+            "source": {
+              "description": "A path, optionally with a line, or a symbol in the target at the pinned revision.",
+              "type": "string",
+              "minLength": 1
+            },
             "extractor": { "type": "string" }
           }
         },
@@ -166,8 +259,35 @@
             "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
             "basis": { "description": "What the proposal rests on.", "type": "string" }
           }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "probe", "call"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "probed" },
+            "probe": {
+              "description": "The probe that produced the fact, with its version.",
+              "type": "string",
+              "minLength": 1
+            },
+            "call": {
+              "description": "What was executed, such as a function call with its arguments, at the pinned revision.",
+              "type": "string",
+              "minLength": 1
+            },
+            "fixture": {
+              "description": "The fixture the call ran against, by name or content hash.",
+              "type": "string"
+            }
+          }
         }
       ]
+    },
+    "sha256": {
+      "description": "A lowercase hex SHA-256 of a document's canonical JSON form: keys sorted, separators ',' and ':', UTF-8, no ASCII escaping.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }

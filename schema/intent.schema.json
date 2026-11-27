@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tasker-systems/topos/schema/intent.schema.json",
-  "title": "Topos declared intent (draft 0.1)",
+  "title": "Topos declared intent (0.2)",
   "description": "What a system's owner means it to allow. A model on its own says only what is reachable. Paired with an intent, the difference between what is reachable and what is intended becomes findings. Intent is always an input: topos never infers it and presents the result as fact.",
   "type": "object",
   "required": ["schema_version", "target", "owner", "personas", "rules"],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "0.1" },
+    "schema_version": { "const": "0.2" },
     "target": {
       "description": "The system this intent is for. The revision is optional: an intent usually holds across revisions.",
       "type": "object",
@@ -43,7 +43,10 @@
         "properties": {
           "id": { "$ref": "#/$defs/id" },
           "statement": { "type": "string", "minLength": 1 },
-          "polarity": { "description": "`may`: intended to be reachable. `never`: intended to be unreachable.", "enum": ["may", "never"] },
+          "polarity": {
+            "description": "`may`: intended to be reachable. `never`: intended to be unreachable.",
+            "enum": ["may", "never"]
+          },
           "applies_to": {
             "type": "object",
             "additionalProperties": false,
@@ -59,10 +62,31 @@
             "properties": {
               "transitions": { "type": "array", "items": { "$ref": "#/$defs/id" } },
               "capabilities": { "type": "array", "items": { "$ref": "#/$defs/id" } },
-              "states": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+              "states": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "access": {
+                "description": "The access facts the rule speaks about, selected by actor-class axes, actions and object classes. An omitted selector matches every value.",
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "actor_axes": {
+                    "description": "Axis values an actor class must have, each a list of accepted values.",
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": { "type": ["string", "boolean", "number", "null"] }
+                    }
+                  },
+                  "actions": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+                  "object_classes": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+                }
+              }
             }
           },
-          "source": { "description": "Where the rule is stated: a document, a doc comment, a spec, or the owner's own declaration.", "type": "string", "minLength": 1 }
+          "source": {
+            "description": "Where the rule is stated: a document with its line, a doc comment, a spec, or the owner's own declaration. Every rule cites one.",
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -83,7 +107,5 @@
       }
     }
   },
-  "$defs": {
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" }
-  }
+  "$defs": { "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" } }
 }

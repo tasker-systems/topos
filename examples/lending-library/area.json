@@ -1,0 +1,70 @@
+{
+  "schema_version": "0.2",
+  "name": "circulation",
+  "target": { "name": "lending-library", "revision": "synthetic-1" },
+  "owner": "example-owner",
+  "inputs": [
+    {
+      "role": "structural-topology",
+      "ref": "examples/lending-library/topology.json",
+      "sha256": "a6640174124923623a4a0f5b83b7c1a0f6ff14e864a7aded638ee5e4da199ed3"
+    }
+  ],
+  "derivation": {
+    "method": "declared",
+    "by": "example-owner",
+    "rule": "the tables a book's circulation status lives in, and everything that reads, writes, guards or is attached to them"
+  },
+  "members": [
+    "function:public.can_return(uuid,uuid)",
+    "function:public.lend(uuid,uuid,uuid)",
+    "function:public.mark_lost(uuid,uuid)",
+    "function:public.return_book(uuid,uuid)",
+    "function:public.touch_book()",
+    "policy:public.loans.loans_visible",
+    "table:public.books",
+    "table:public.loans",
+    "trigger:public.books.books_audit",
+    "type:public.book_status",
+    "view:public.books_on_loan"
+  ],
+  "hand_edits": [],
+  "exclusions": [],
+  "boundary": [
+    {
+      "edge": "calls:function:public.can_return(uuid,uuid)->function:public.is_librarian(uuid)",
+      "inside": "function:public.can_return(uuid,uuid)",
+      "outside": "function:public.is_librarian(uuid)",
+      "class": "state-carrying",
+      "basis": "the callee is stable: its answer depends on rows it reads on the other side"
+    },
+    {
+      "edge": "calls:function:public.lend(uuid,uuid,uuid)->function:public.is_librarian(uuid)",
+      "inside": "function:public.lend(uuid,uuid,uuid)",
+      "outside": "function:public.is_librarian(uuid)",
+      "class": "state-carrying",
+      "basis": "the callee is stable: its answer depends on rows it reads on the other side"
+    },
+    {
+      "edge": "calls:policy:public.loans.loans_visible->function:public.is_librarian(uuid)",
+      "inside": "policy:public.loans.loans_visible",
+      "outside": "function:public.is_librarian(uuid)",
+      "class": "state-carrying",
+      "basis": "the callee is stable: its answer depends on rows it reads on the other side"
+    },
+    {
+      "edge": "foreign_key:table:public.loans->table:public.members",
+      "inside": "table:public.loans",
+      "outside": "table:public.members",
+      "class": "reference-only",
+      "basis": "a key names the other table's rows without carrying its state across"
+    },
+    {
+      "edge": "writes:function:public.touch_book()->table:public.audit_log",
+      "inside": "function:public.touch_book()",
+      "outside": "table:public.audit_log",
+      "class": "state-carrying",
+      "basis": "a write into a table on the other side"
+    }
+  ]
+}

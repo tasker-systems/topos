@@ -1,0 +1,550 @@
+{
+  "schema_version": "0.2",
+  "target": { "name": "lending-library", "revision": "synthetic-1", "kind": "software" },
+  "extractor": {
+    "name": "topos.extract.postgres",
+    "version": "0.2.0",
+    "parameters": { "exclusions": [] },
+    "source": {
+      "server_version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "search_path": "\"$user\", public"
+    }
+  },
+  "nodes": [
+    {
+      "id": "function:public.can_return(uuid,uuid)",
+      "kind": "function",
+      "schema": "public",
+      "name": "can_return",
+      "arguments": ["uuid", "uuid"],
+      "returns": "boolean",
+      "language": "sql",
+      "volatility": "stable",
+      "security_definer": false,
+      "body_sha256": "9e45c6988b46c7576b6e7f5363683730537df861c4cac9af2f61a77b279cec4d",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.can_return(uuid,uuid)",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "function:public.is_librarian(uuid)",
+      "kind": "function",
+      "schema": "public",
+      "name": "is_librarian",
+      "arguments": ["uuid"],
+      "returns": "boolean",
+      "language": "sql",
+      "volatility": "stable",
+      "security_definer": false,
+      "body_sha256": "df6a972a6a7d95d44b8f720f614f72464ff014e36b1e0b1d2c9baeb2c2abab3d",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.is_librarian(uuid)",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "function:public.lend(uuid,uuid,uuid)",
+      "kind": "function",
+      "schema": "public",
+      "name": "lend",
+      "arguments": ["uuid", "uuid", "uuid"],
+      "returns": "void",
+      "language": "plpgsql",
+      "volatility": "volatile",
+      "security_definer": false,
+      "body_sha256": "c887a164d2d537c4f4dd0795e475944a218e77484556ee23202cdccb05fd8617",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.lend(uuid,uuid,uuid)",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "function:public.mark_lost(uuid,uuid)",
+      "kind": "function",
+      "schema": "public",
+      "name": "mark_lost",
+      "arguments": ["uuid", "uuid"],
+      "returns": "void",
+      "language": "plpgsql",
+      "volatility": "volatile",
+      "security_definer": false,
+      "body_sha256": "2eb19a201ad1d411393e22a29cb243cabe32d56e269c9cfa81d64b3b0f722c85",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.mark_lost(uuid,uuid)",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "function:public.return_book(uuid,uuid)",
+      "kind": "function",
+      "schema": "public",
+      "name": "return_book",
+      "arguments": ["uuid", "uuid"],
+      "returns": "void",
+      "language": "plpgsql",
+      "volatility": "volatile",
+      "security_definer": false,
+      "body_sha256": "834884b84fb82a7a61d07c7fc5ed4601a0701726277cba329ad51fea9392fa24",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.return_book(uuid,uuid)",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "function:public.touch_book()",
+      "kind": "function",
+      "schema": "public",
+      "name": "touch_book",
+      "arguments": [],
+      "returns": "trigger",
+      "language": "plpgsql",
+      "volatility": "volatile",
+      "security_definer": false,
+      "body_sha256": "46cd134283bdf407c0ef4f184cd9c87eae00c0dd299df1b509a763e20ec1bf99",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.touch_book()",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "policy:public.loans.loans_visible",
+      "kind": "policy",
+      "schema": "public",
+      "name": "loans_visible",
+      "events": ["select"],
+      "permissive": true,
+      "roles": ["public"],
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_policy:public.loans.loans_visible",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "table:public.audit_log",
+      "kind": "table",
+      "schema": "public",
+      "name": "audit_log",
+      "columns": [
+        { "name": "id", "type": "bigint", "nullable": false },
+        { "name": "book_id", "type": "uuid", "nullable": false },
+        { "name": "note", "type": "text", "nullable": false }
+      ],
+      "row_security": false,
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_class:public.audit_log",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "primary_key": ["id"]
+    },
+    {
+      "id": "table:public.books",
+      "kind": "table",
+      "schema": "public",
+      "name": "books",
+      "columns": [
+        { "name": "id", "type": "uuid", "nullable": false },
+        { "name": "title", "type": "text", "nullable": false },
+        {
+          "name": "status",
+          "type": "book_status",
+          "nullable": false,
+          "default": "'available'::book_status",
+          "values": ["available", "on_loan", "lost"],
+          "values_from": "enum"
+        }
+      ],
+      "row_security": false,
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_class:public.books",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "primary_key": ["id"]
+    },
+    {
+      "id": "table:public.loans",
+      "kind": "table",
+      "schema": "public",
+      "name": "loans",
+      "columns": [
+        { "name": "book_id", "type": "uuid", "nullable": false },
+        { "name": "borrower", "type": "uuid", "nullable": false },
+        {
+          "name": "lent_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "row_security": true,
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_class:public.loans",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "primary_key": ["book_id"]
+    },
+    {
+      "id": "table:public.members",
+      "kind": "table",
+      "schema": "public",
+      "name": "members",
+      "columns": [
+        { "name": "id", "type": "uuid", "nullable": false },
+        { "name": "name", "type": "text", "nullable": false },
+        {
+          "name": "role",
+          "type": "text",
+          "nullable": false,
+          "values": ["member", "librarian"],
+          "values_from": "check"
+        }
+      ],
+      "row_security": false,
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_class:public.members",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "primary_key": ["id"]
+    },
+    {
+      "id": "trigger:public.books.books_audit",
+      "kind": "trigger",
+      "schema": "public",
+      "name": "books_audit",
+      "timing": "after",
+      "events": ["update"],
+      "level": "row",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_trigger:public.books.books_audit",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    },
+    {
+      "id": "type:public.book_status",
+      "kind": "type",
+      "schema": "public",
+      "name": "book_status",
+      "type_kind": "enum",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_type:public.book_status",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "values": ["available", "on_loan", "lost"]
+    },
+    {
+      "id": "view:public.books_on_loan",
+      "kind": "view",
+      "schema": "public",
+      "name": "books_on_loan",
+      "columns": [
+        { "name": "id", "type": "uuid", "nullable": true },
+        { "name": "title", "type": "text", "nullable": true },
+        { "name": "borrower", "type": "uuid", "nullable": true }
+      ],
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_class:public.books_on_loan",
+        "extractor": "topos.extract.postgres 0.2.0"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "calls:function:public.can_return(uuid,uuid)->function:public.is_librarian(uuid)",
+      "kind": "calls",
+      "from": "function:public.can_return(uuid,uuid)",
+      "to": "function:public.is_librarian(uuid)",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.can_return(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body"
+    },
+    {
+      "id": "calls:function:public.lend(uuid,uuid,uuid)->function:public.is_librarian(uuid)",
+      "kind": "calls",
+      "from": "function:public.lend(uuid,uuid,uuid)",
+      "to": "function:public.is_librarian(uuid)",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.lend(uuid,uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body"
+    },
+    {
+      "id": "calls:function:public.mark_lost(uuid,uuid)->function:public.can_return(uuid,uuid)",
+      "kind": "calls",
+      "from": "function:public.mark_lost(uuid,uuid)",
+      "to": "function:public.can_return(uuid,uuid)",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.mark_lost(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body"
+    },
+    {
+      "id": "calls:function:public.return_book(uuid,uuid)->function:public.can_return(uuid,uuid)",
+      "kind": "calls",
+      "from": "function:public.return_book(uuid,uuid)",
+      "to": "function:public.can_return(uuid,uuid)",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.return_book(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body"
+    },
+    {
+      "id": "calls:policy:public.loans.loans_visible->function:public.is_librarian(uuid)",
+      "kind": "calls",
+      "from": "policy:public.loans.loans_visible",
+      "to": "function:public.is_librarian(uuid)",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_depend:policy:policy:public.loans.loans_visible",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "policy"
+    },
+    {
+      "id": "executes:trigger:public.books.books_audit->function:public.touch_book()",
+      "kind": "executes",
+      "from": "trigger:public.books.books_audit",
+      "to": "function:public.touch_book()",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_trigger:books_audit",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "trigger"
+    },
+    {
+      "id": "foreign_key:table:public.loans->table:public.books",
+      "kind": "foreign_key",
+      "from": "table:public.loans",
+      "to": "table:public.books",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_constraint:loans_book_id_fkey",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "key",
+      "columns": ["book_id"]
+    },
+    {
+      "id": "foreign_key:table:public.loans->table:public.members",
+      "kind": "foreign_key",
+      "from": "table:public.loans",
+      "to": "table:public.members",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_constraint:loans_borrower_fkey",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "key",
+      "columns": ["borrower"]
+    },
+    {
+      "id": "policy_on:policy:public.loans.loans_visible->table:public.loans",
+      "kind": "policy_on",
+      "from": "policy:public.loans.loans_visible",
+      "to": "table:public.loans",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_policy:loans_visible",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "policy"
+    },
+    {
+      "id": "reads:function:public.can_return(uuid,uuid)->table:public.loans",
+      "kind": "reads",
+      "from": "function:public.can_return(uuid,uuid)",
+      "to": "table:public.loans",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.can_return(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body"
+    },
+    {
+      "id": "reads:function:public.is_librarian(uuid)->table:public.members",
+      "kind": "reads",
+      "from": "function:public.is_librarian(uuid)",
+      "to": "table:public.members",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.is_librarian(uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body"
+    },
+    {
+      "id": "reads:view:public.books_on_loan->table:public.books",
+      "kind": "reads",
+      "from": "view:public.books_on_loan",
+      "to": "table:public.books",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_depend:view:view:public.books_on_loan",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "view"
+    },
+    {
+      "id": "reads:view:public.books_on_loan->table:public.loans",
+      "kind": "reads",
+      "from": "view:public.books_on_loan",
+      "to": "table:public.loans",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_depend:view:view:public.books_on_loan",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "view"
+    },
+    {
+      "id": "trigger_on:trigger:public.books.books_audit->table:public.books",
+      "kind": "trigger_on",
+      "from": "trigger:public.books.books_audit",
+      "to": "table:public.books",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_trigger:books_audit",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "trigger"
+    },
+    {
+      "id": "typed_by:table:public.books->type:public.book_status",
+      "kind": "typed_by",
+      "from": "table:public.books",
+      "to": "type:public.book_status",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_attribute:status",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "column",
+      "columns": ["status"]
+    },
+    {
+      "id": "writes:function:public.lend(uuid,uuid,uuid)->table:public.books",
+      "kind": "writes",
+      "from": "function:public.lend(uuid,uuid,uuid)",
+      "to": "table:public.books",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.lend(uuid,uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body",
+      "operations": ["update"]
+    },
+    {
+      "id": "writes:function:public.lend(uuid,uuid,uuid)->table:public.loans",
+      "kind": "writes",
+      "from": "function:public.lend(uuid,uuid,uuid)",
+      "to": "table:public.loans",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.lend(uuid,uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body",
+      "operations": ["insert"]
+    },
+    {
+      "id": "writes:function:public.mark_lost(uuid,uuid)->table:public.books",
+      "kind": "writes",
+      "from": "function:public.mark_lost(uuid,uuid)",
+      "to": "table:public.books",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.mark_lost(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body",
+      "operations": ["update"]
+    },
+    {
+      "id": "writes:function:public.return_book(uuid,uuid)->table:public.books",
+      "kind": "writes",
+      "from": "function:public.return_book(uuid,uuid)",
+      "to": "table:public.books",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.return_book(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body",
+      "operations": ["update"]
+    },
+    {
+      "id": "writes:function:public.return_book(uuid,uuid)->table:public.loans",
+      "kind": "writes",
+      "from": "function:public.return_book(uuid,uuid)",
+      "to": "table:public.loans",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.return_book(uuid,uuid) body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body",
+      "operations": ["delete"]
+    },
+    {
+      "id": "writes:function:public.touch_book()->table:public.audit_log",
+      "kind": "writes",
+      "from": "function:public.touch_book()",
+      "to": "table:public.audit_log",
+      "provenance": {
+        "kind": "extracted",
+        "source": "pg_proc:public.touch_book() body",
+        "extractor": "topos.extract.postgres 0.2.0"
+      },
+      "via": "body",
+      "operations": ["insert"]
+    }
+  ],
+  "excluded": [
+    {
+      "selector": "schema:pg_catalog, schema:information_schema, schema:pg_toast",
+      "basis": "scope",
+      "reason": "the system catalog is the database's, not the target's; references to its objects are not recorded as edges"
+    },
+    {
+      "selector": "sequences",
+      "basis": "scope",
+      "reason": "schema 0.2 does not model sequences; a default that reads one is not an edge"
+    },
+    {
+      "selector": "partitions",
+      "basis": "structure",
+      "reason": "a partition is represented by its parent table"
+    },
+    {
+      "selector": "extension:plpgsql",
+      "basis": "scope",
+      "reason": "the plpgsql 1.0 extension's 4 objects belong to the extension, not the target; references to them are not recorded as edges"
+    }
+  ],
+  "holes": []
+}
