@@ -1,7 +1,7 @@
 # This repository's pin on the tasker-systems conventions baseline. Doctrine: CONS-* in
 # .conventions/baseline/doctrine/consuming.md. `revision` is written by `conventions.py bump`.
 name = "topos"
-revision = "f2bc55b17e63e7dd3a94dc5c4ac7657d43d495bf"
+revision = "c61dcf2c67b2c2c7cc332e3fae5f287eeace694a"
 
 # Each adopted canonical file: where it lives here, and how it is compared (exact, extends,
 # table, superset). There is no Rust code yet, so no Rust config is adopted.
