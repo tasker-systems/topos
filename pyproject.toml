@@ -11,11 +11,14 @@ dependencies = [
     "networkx>=3.7,<4",
 ]
 
-[project.optional-dependencies]
-test = ["pytest>=9.1,<10", "jsonschema>=4.26,<5"]
+# Development dependencies, resolved into uv.lock. `uv sync` installs `dev`, which is every group.
+[dependency-groups]
+test = ["pytest>=9.2,<10", "jsonschema>=4.26,<5"]
+lint = ["ruff==0.16.9"]
+dev = [{ include-group = "test" }, { include-group = "lint" }]
 
 [build-system]
-requires = ["setuptools>=80"]
+requires = ["setuptools>=84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
@@ -23,6 +26,14 @@ version = { attr = "topos.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.uv]
+# SC-IN-1: resolve only releases at least a week old, matching Dependabot's cooldown.
+exclude-newer = "7 days"
+# The lock covers Python 3.12 and later only: networkx 3.7, the floor of its range above, requires
+# 3.12, so no 3.11 environment can install topos as declared. Whether to raise `requires-python`
+# (and ruff's target-version with it, PY-VER-1) or widen the networkx range is not decided here.
+environments = ["python_version >= '3.12'"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
