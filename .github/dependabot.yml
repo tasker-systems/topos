@@ -1,0 +1,14 @@
+# Dependency updates for this repository (SC-IN-2). Its one ecosystem so far is GitHub Actions:
+# the SHA pins in .github/workflows/ (SC-GHA-1).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # SC-IN-1: a new release waits a week before it is proposed.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
