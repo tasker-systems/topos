@@ -8,14 +8,14 @@ requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
     "pglast>=8.9,<9",
-    "psycopg[binary]>=3.3,<4",
+    "psycopg[binary]>=3.3.9,<4",
     "networkx>=3.7,<4",
 ]
 
 # Development dependencies, resolved into uv.lock. `uv sync` installs `dev`, which is every group.
 [dependency-groups]
 test = ["pytest>=9.2,<10", "jsonschema>=4.26,<5"]
-lint = ["ruff==0.16.9"]
+lint = ["ruff==0.17.6"]
 dev = [{ include-group = "test" }, { include-group = "lint" }]
 
 [build-system]
