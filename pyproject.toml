@@ -3,19 +3,22 @@ name = "topos"
 description = "State what a system allows, and check it against what was intended."
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
     "pglast>=8.9,<9",
-    "psycopg[binary]>=3.3,<4",
+    "psycopg[binary]>=3.3.9,<4",
     "networkx>=3.7,<4",
 ]
 
-[project.optional-dependencies]
-test = ["pytest>=9.1,<10", "jsonschema>=4.26,<5"]
+# Development dependencies, resolved into uv.lock. `uv sync` installs `dev`, which is every group.
+[dependency-groups]
+test = ["pytest>=9.2,<10", "jsonschema>=4.26,<5"]
+lint = ["ruff==0.17.6"]
+dev = [{ include-group = "test" }, { include-group = "lint" }]
 
 [build-system]
-requires = ["setuptools>=80"]
+requires = ["setuptools>=84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
@@ -23,6 +26,10 @@ version = { attr = "topos.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.uv]
+# SC-IN-1: resolve only releases at least a week old, matching Dependabot's cooldown.
+exclude-newer = "7 days"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -84,6 +84,17 @@ Software comes first, and other rule systems later. Targets are systems owned by
 Analyses of real targets, and any statement of a defect in one, are kept out of this repository.
 The tests and examples here use synthetic systems only.
 
+## Development
+
+Install [mise](https://mise.jdx.dev), then:
+
+```sh
+mise install     # Python and uv, pinned in mise.toml
+uv sync          # dependencies, locked in uv.lock
+uv run pytest    # set TOPOS_TEST_DSN to a PostgreSQL role that may create databases
+uv run ruff check . && uv run ruff format --check .
+```
+
 ## Conventions
 
 This repository consumes the [tasker-systems conventions](https://github.com/tasker-systems/conventions)
