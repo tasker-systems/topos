@@ -60,6 +60,9 @@ Early. What exists:
     relation, keeping errors and NULLs as `indeterminate` and unconstructible cases as
     `not_constructed`. `topos.probe.postgres` runs it against PostgreSQL with a fixture-builder
     callback, rolling back every combination and every call.
+  - `topos.qualify` overlays a declared intent on a model. Every access fact is reported as
+    intended, contrary to intent, or unqualified; a rule no fact matches is reported as intended
+    but not reachable; and indeterminate and unconstructed cases are counted, never qualified.
 - [`examples/`](examples/): a small synthetic system written in those schemas.
 
 ## Crossing-edge classes
