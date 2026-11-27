@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "target": { "name": "lending-library" },
   "owner": "example-owner",
   "personas": [
@@ -12,7 +12,14 @@
       "statement": "A member may return a book they have borrowed.",
       "polarity": "may",
       "applies_to": { "personas": ["borrower"] },
-      "concerns": { "transitions": ["return"] },
+      "concerns": {
+        "transitions": ["return"],
+        "access": {
+          "actor_axes": { "role": ["member"], "holds_loan": [true] },
+          "actions": ["return"],
+          "object_classes": ["book.on_loan"]
+        }
+      },
       "source": "docs/circulation.md#returns"
     },
     {

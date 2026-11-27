@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/structural-topology.schema.json",
+  "title": "Topos structural topology (0.2)",
+  "description": "The whole-system dependency graph of a target at one pinned revision: its tables, views, functions, triggers, policies and types as nodes, and the keys, reads, writes, calls and attachments between them as edges. It is extracted, never inferred, and takes no intent. Clustering reads it, and areas of concern are proposed from it.",
+  "type": "object",
+  "required": ["schema_version", "target", "extractor", "nodes", "edges", "excluded", "holes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.2" },
+    "target": {
+      "type": "object",
+      "required": ["name", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "revision": {
+          "description": "An immutable identifier, such as a full commit SHA.",
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": { "enum": ["software", "rules"] }
+      }
+    },
+    "extractor": {
+      "description": "What produced this document, and how it was configured. The same target revision under the same extractor and parameters yields the same document.",
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "parameters": { "type": "object" },
+        "source": {
+          "description": "What was read, such as the server version of the database the schema was applied to.",
+          "type": "object"
+        }
+      }
+    },
+    "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } },
+    "excluded": {
+      "description": "Everything left out of the document, each with its reason. A reason is never that the excluded thing is not meant to happen.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/exclusion" }
+    },
+    "holes": {
+      "description": "What the extractor could not see, stated rather than left silent: a dynamic statement whose target is not known statically, a body that did not parse, a name that did not resolve.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["element", "what"],
+        "additionalProperties": false,
+        "properties": {
+          "element": { "type": "string", "minLength": 1 },
+          "what": {
+            "enum": ["dynamic-sql", "unparsed-body", "unresolved-reference", "unsupported-language"]
+          },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "node_id": {
+      "description": "`<kind>:<qualified name>`, with a function's argument types in parentheses, so overloads stay distinct.",
+      "type": "string",
+      "pattern": "^[a-z_]+:.+$"
+    },
+    "sha256": {
+      "description": "A lowercase hex SHA-256 of a document's canonical JSON form: keys sorted, separators ',' and ':', UTF-8, no ASCII escaping.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "column": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "nullable": { "type": "boolean" },
+        "default": { "type": "string" },
+        "values": {
+          "description": "The finite set of values the column can hold, from its enum type or a check constraint. Such a column is a state variable.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "values_from": { "enum": ["enum", "check"] }
+      }
+    },
+    "node": {
+      "type": "object",
+      "required": ["id", "kind", "schema", "name", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/node_id" },
+        "kind": {
+          "enum": [
+            "table",
+            "view",
+            "materialized_view",
+            "function",
+            "procedure",
+            "trigger",
+            "policy",
+            "type"
+          ]
+        },
+        "schema": { "type": "string" },
+        "name": { "type": "string" },
+        "columns": {
+          "description": "Tables and views.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/column" }
+        },
+        "primary_key": { "type": "array", "items": { "type": "string" } },
+        "row_security": {
+          "description": "Tables: whether row-level security is enabled.",
+          "type": "boolean"
+        },
+        "arguments": {
+          "description": "Functions and procedures: argument types, in order.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "returns": { "type": "string" },
+        "language": { "type": "string" },
+        "volatility": { "enum": ["immutable", "stable", "volatile"] },
+        "security_definer": { "type": "boolean" },
+        "body_sha256": {
+          "description": "Functions: a hash of the body as applied, so a later redefinition is visible.",
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "timing": { "description": "Triggers.", "enum": ["before", "after", "instead_of"] },
+        "events": {
+          "description": "Triggers: insert, update, delete, truncate. Policies: the command they apply to.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "level": { "description": "Triggers.", "enum": ["row", "statement"] },
+        "permissive": { "description": "Policies.", "type": "boolean" },
+        "roles": {
+          "description": "Policies: the database roles they apply to.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "type_kind": { "description": "Types.", "enum": ["enum", "domain", "composite", "range"] },
+        "values": {
+          "description": "Enum types: their labels, in order.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "provenance": {
+          "description": "Every element of a structural topology is read directly from the target, so its provenance is always `extracted`. It names the catalog relation or parsed body it came from.",
+          "type": "object",
+          "required": ["kind", "source", "extractor"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "extracted" },
+            "source": { "type": "string", "minLength": 1 },
+            "extractor": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": ["id", "kind", "from", "to", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique in the document: `<kind>:<from>-><to>`, with a suffix when two edges of one kind join the same nodes.",
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "description": "`foreign_key`: a table references another. `reads`: a body, view, policy or constraint reads a relation. `writes`: a body inserts, updates, deletes or merges into a table. `calls`: something invokes a function. `trigger_on`: a trigger is attached to a table. `executes`: a trigger runs a function. `policy_on`: a policy guards a table. `typed_by`: a column is of a user-defined type.",
+          "enum": [
+            "foreign_key",
+            "reads",
+            "writes",
+            "calls",
+            "trigger_on",
+            "executes",
+            "policy_on",
+            "typed_by"
+          ]
+        },
+        "from": { "$ref": "#/$defs/node_id" },
+        "to": { "$ref": "#/$defs/node_id" },
+        "via": {
+          "description": "Where the reference sits: a function body, a view definition, a policy expression, a column default, a check constraint.",
+          "enum": ["body", "view", "policy", "default", "check", "trigger", "key", "column"]
+        },
+        "columns": { "type": "array", "items": { "type": "string" } },
+        "operations": {
+          "description": "`writes` edges: which writes.",
+          "type": "array",
+          "items": { "enum": ["insert", "update", "delete", "merge", "truncate"] }
+        },
+        "provenance": {
+          "description": "Every element of a structural topology is read directly from the target, so its provenance is always `extracted`. It names the catalog relation or parsed body it came from.",
+          "type": "object",
+          "required": ["kind", "source", "extractor"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "extracted" },
+            "source": { "type": "string", "minLength": 1 },
+            "extractor": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "exclusion": {
+      "type": "object",
+      "required": ["selector", "basis", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "selector": {
+          "description": "What is excluded: a node id, a schema, or a pattern.",
+          "type": "string",
+          "minLength": 1
+        },
+        "basis": {
+          "description": "`environment`: an artifact of how the target was run, not part of the revision. `scope`: outside the target, such as an extension's or the system catalog's objects. `tractability`: left out so an analysis can finish. `structure`: the structure itself puts it outside.",
+          "enum": ["environment", "scope", "tractability", "structure"]
+        },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

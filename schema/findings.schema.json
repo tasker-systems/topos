@@ -1,23 +1,30 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tasker-systems/topos/schema/findings.schema.json",
-  "title": "Topos findings report (draft 0.1)",
-  "description": "The difference between what a model allows and what an intent declares. Each finding carries the persona it concerns, the rule it departs from, and a witness path that reproduces it, so a plain-language account can be written from the finding alone. A run with no intent produces no findings. It reports reachability only, and says that no intent was declared.",
+  "title": "Topos findings report (0.2)",
+  "description": "The difference between what a model allows and what an intent declares. Every observed interaction in the area of concern lands in exactly one of intended, contrary to intent, or unqualified. Each finding carries the persona it concerns, the rule it departs from or a statement that none applies, and a witness that reproduces it, so a plain-language account can be written from the finding alone. With no intent declared, every interaction is reported as unqualified and nothing is called a risk.",
   "type": "object",
   "required": ["schema_version", "target", "abstraction", "intent", "examined", "findings"],
   "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "0.1" },
+    "schema_version": { "const": "0.2" },
     "target": {
       "type": "object",
       "required": ["name", "revision"],
       "additionalProperties": false,
-      "properties": {
-        "name": { "type": "string" },
-        "revision": { "type": "string" }
-      }
+      "properties": { "name": { "type": "string" }, "revision": { "type": "string" } }
     },
-    "abstraction": { "description": "The abstraction statement of the model these findings come from.", "type": "string" },
+    "model": {
+      "description": "The model these findings were qualified from, by content hash.",
+      "type": "object",
+      "required": ["sha256"],
+      "additionalProperties": false,
+      "properties": { "name": { "type": "string" }, "sha256": { "$ref": "#/$defs/sha256" } }
+    },
+    "abstraction": {
+      "description": "The abstraction statement of the model these findings come from.",
+      "type": "string"
+    },
     "intent": {
       "description": "The intent document compared against, or null if none was declared.",
       "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }]
@@ -30,8 +37,24 @@
       "properties": {
         "readings": { "type": "array", "items": { "type": "string" } },
         "personas": { "type": "array", "items": { "type": "string" } },
-        "not_examined": { "type": "array", "items": { "type": "string" } }
-      }
+        "not_examined": { "type": "array", "items": { "type": "string" } },
+        "area_of_concern": {
+          "description": "The area of concern the model was observed under.",
+          "type": "string",
+          "minLength": 1
+        },
+        "unexamined_crossings": {
+          "description": "Every edge crossing the area's boundary that was not examined, by its topology edge id. Required whenever an area of concern is named.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "bounds": {
+          "description": "The bounds a probed fact holds within, so that a clean probe is never read as 'safe'.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "dependentRequired": { "area_of_concern": ["unexamined_crossings"] }
     },
     "findings": {
       "type": "array",
@@ -42,28 +65,47 @@
         "properties": {
           "id": { "type": "string" },
           "kind": {
-            "description": "`reachable-not-intended`: the model allows what a `never` rule forbids. `intended-not-reachable`: the model cannot do what a `may` rule or job expects.",
-            "enum": ["reachable-not-intended", "intended-not-reachable"]
+            "description": "`reachable-not-intended`: the model allows what a `never` rule forbids. `intended-not-reachable`: the model cannot do what a `may` rule or job expects. `intended`: the model allows what a `may` rule permits. `unqualified`: no declared rule speaks to an observed interaction; it is reported, never dropped, and never read as intended.",
+            "enum": ["reachable-not-intended", "intended-not-reachable", "intended", "unqualified"]
           },
           "persona": { "type": "string" },
-          "rule": { "description": "The intent rule or job this finding departs from.", "type": "string" },
+          "rule": {
+            "description": "The intent rule or job this finding is judged under, or null for an `unqualified` interaction.",
+            "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }]
+          },
           "witness": {
-            "description": "A sequence of transitions, starting from an initial state the persona can occupy, that reproduces the finding. Empty only for `intended-not-reachable`, where `blocked_at` says where reachability stops.",
-            "type": "object",
-            "required": ["path"],
-            "additionalProperties": false,
-            "properties": {
-              "path": { "type": "array", "items": { "type": "string" } },
-              "blocked_at": { "type": "string" }
-            }
+            "description": "What reproduces the finding: either a sequence of transitions starting from an initial state the persona can occupy, or a single access fact. A path is empty only for `intended-not-reachable`, where `blocked_at` says where reachability stops.",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": ["path"],
+                "additionalProperties": false,
+                "properties": {
+                  "path": { "type": "array", "items": { "type": "string" } },
+                  "blocked_at": { "type": "string" }
+                }
+              },
+              {
+                "type": "object",
+                "required": ["access_fact"],
+                "additionalProperties": false,
+                "properties": {
+                  "access_fact": {
+                    "description": "The id of an access fact in the model.",
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            ]
           },
           "evidence": {
-            "description": "Whether every element on the witness path was extracted, or whether some were inferred. An inferred element on the path is named, so the finding is never stronger than its weakest edge.",
+            "description": "Whether every element of the witness was extracted or probed, or whether some were inferred. An inferred element is named, so the finding is never stronger than its weakest element.",
             "type": "object",
-            "required": ["all_extracted"],
+            "required": ["all_extracted_or_probed"],
             "additionalProperties": false,
             "properties": {
-              "all_extracted": { "type": "boolean" },
+              "all_extracted_or_probed": { "type": "boolean" },
               "inferred_elements": { "type": "array", "items": { "type": "string" } }
             }
           },
@@ -77,9 +119,27 @@
               "by": { "type": "string" },
               "note": { "type": "string" }
             }
+          },
+          "actor_class": {
+            "description": "For an access finding, the situated actor class it concerns.",
+            "type": "string"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "kind": { "const": "unqualified" } } },
+            "then": { "properties": { "rule": { "type": "null" } } },
+            "else": { "properties": { "rule": { "type": "string" } } }
+          }
+        ]
       }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "description": "A lowercase hex SHA-256 of a document's canonical JSON form: keys sorted, separators ',' and ':', UTF-8, no ASCII escaping.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   }
 }

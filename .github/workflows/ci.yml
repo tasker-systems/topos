@@ -30,7 +30,7 @@ jobs:
       - name: Witness — each check refuses a seeded violation
         run: python3 -I .conventions/baseline/tools/conventions.py witness
 
-  # Every example validates against the draft schemas, and every id and witness path in it resolves.
+  # Every example validates against the schemas, and every id and witness path in it resolves.
   examples:
     name: Examples match the schemas
     runs-on: ubuntu-latest

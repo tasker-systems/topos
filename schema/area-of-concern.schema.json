@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/area-of-concern.schema.json",
+  "title": "Topos area of concern (0.2)",
+  "description": "The part of a target under analysis: its members, how they were chosen, every hand edit and exclusion with its reason, and every edge of the structural topology that crosses its boundary. Each crossing edge is classed as state-carrying or reference-only. An area is an input to observation, owned by the target's owner, and is never drawn from intent.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "name",
+    "target",
+    "owner",
+    "inputs",
+    "derivation",
+    "members",
+    "hand_edits",
+    "exclusions",
+    "boundary"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.2" },
+    "name": { "type": "string", "minLength": 1 },
+    "target": {
+      "type": "object",
+      "required": ["name", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string", "minLength": 1 }
+      }
+    },
+    "owner": { "description": "Who owns this declaration.", "type": "string", "minLength": 1 },
+    "inputs": {
+      "description": "Every document this declaration was derived from, by content hash. The structural topology is always one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "role": { "enum": ["structural-topology", "clustering"] },
+          "ref": {
+            "description": "Where the document is held, such as a data-artifact id or a path.",
+            "type": "string"
+          },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "derivation": {
+      "description": "How the members were chosen.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["method", "algorithm", "clusters", "rule"],
+          "additionalProperties": false,
+          "properties": {
+            "method": { "const": "clustering" },
+            "algorithm": {
+              "description": "The clustering result the area was drawn from, by its id in the clustering document.",
+              "type": "string",
+              "minLength": 1
+            },
+            "clusters": {
+              "description": "The clusters whose union, before hand edits, is the area.",
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" }
+            },
+            "rule": {
+              "description": "The selection rule, stated before the clustering output was read.",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["method", "by", "rule"],
+          "additionalProperties": false,
+          "properties": {
+            "method": { "const": "declared" },
+            "by": { "type": "string", "minLength": 1 },
+            "rule": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "members": {
+      "description": "The node ids in the area, after hand edits.",
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    },
+    "hand_edits": {
+      "description": "Every element added to or removed from the derived set by hand, with its reason.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["op", "element", "by", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "op": { "enum": ["add", "remove"] },
+          "element": { "type": "string" },
+          "by": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "exclusions": {
+      "description": "What the area deliberately leaves out of analysis though it sits inside, each with its reason. A reason is never that the excluded thing is not meant to happen.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["selector", "basis", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "selector": { "type": "string", "minLength": 1 },
+          "basis": { "enum": ["environment", "scope", "tractability", "structure"] },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "boundary": {
+      "description": "Every topology edge with exactly one end in the area.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["edge", "inside", "outside", "class", "basis"],
+        "additionalProperties": false,
+        "properties": {
+          "edge": {
+            "description": "The edge's id in the structural topology.",
+            "type": "string",
+            "minLength": 1
+          },
+          "inside": { "type": "string" },
+          "outside": { "type": "string" },
+          "class": {
+            "description": "`state-carrying`: state written on one side is read by a function or guard on the other. `reference-only`: the edge names the other side without carrying its state across.",
+            "enum": ["state-carrying", "reference-only"]
+          },
+          "basis": {
+            "description": "Why the edge has its class.",
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "description": "A lowercase hex SHA-256 of a document's canonical JSON form: keys sorted, separators ',' and ':', UTF-8, no ASCII escaping.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

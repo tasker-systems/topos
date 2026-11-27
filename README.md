@@ -31,11 +31,17 @@ Reachability comes first. The other readings are added only when they produce fi
 
 ## Status
 
-Early. There is no extractor or reading yet. What exists:
+Early. What exists:
 
-- [`schema/`](schema/): **draft** JSON Schemas for the three documents topos exchanges. These are a
-  system model, a declared intent and a findings report. They are a proposal, not a settled
-  format.
+- [`schema/`](schema/): JSON Schemas, version 0.2, for the documents topos exchanges. Components
+  meet only at these documents.
+  - The **system model**: entities, states, transitions, grants, and an access relation between
+    situated actors, actions and objects.
+  - The **declared intent**, and the **findings report** that compares a model with it. Every
+    observed interaction is reported as intended, contrary to intent, or unqualified.
+  - The **structural topology**: the whole-system dependency graph that clustering reads.
+  - The **area of concern**: the part of the system under analysis, and every edge that crosses
+    its boundary.
 - [`examples/`](examples/): a small synthetic system written in those schemas.
 
 ## Scope

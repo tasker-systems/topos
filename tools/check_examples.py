@@ -1,14 +1,16 @@
-"""Check every example against the draft schemas, and check that the examples are consistent.
+"""Check every example against the schemas, and check that the examples are consistent.
 
 Schema validation needs the `jsonschema` package. The consistency checks use only the standard
-library: every id a model, intent or findings document names must resolve, and every witness path
-must be a walk the model allows.
+library: every id a model, intent, findings, topology or area document names must resolve, every
+witness path must be a walk the model allows, every content hash must match the document it names,
+and an area's boundary must list exactly the topology edges that cross it.
 
     python3 -I tools/check_examples.py
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -18,7 +20,17 @@ SCHEMAS = {
     "model.json": "system-model.schema.json",
     "intent.json": "intent.schema.json",
     "findings.json": "findings.schema.json",
+    "topology.json": "structural-topology.schema.json",
+    "area.json": "area-of-concern.schema.json",
 }
+
+
+def canonical_sha256(document: object) -> str:
+    """The hash every topos `sha256` field records: sorted keys, `,` and `:`, UTF-8."""
+    text = json.dumps(
+        document, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def load(path: Path) -> dict:
@@ -75,6 +87,17 @@ def check_model(model: dict, where: str, errors: list[str]) -> None:
             for attribute in named
             if attribute not in attributes
         )
+    actors = {actor["id"] for actor in model.get("actor_classes", [])}
+    objects = {obj["id"] for obj in model.get("object_classes", [])}
+    for fact in model.get("access", []):
+        label = f"{where}: access fact {fact['id']}"
+        if fact["actor_class"] not in actors:
+            errors.append(f"{label}: unknown actor class {fact['actor_class']}")
+        if fact["object_class"] not in objects:
+            errors.append(f"{label}: unknown object class {fact['object_class']}")
+    for obj in model.get("object_classes", []):
+        if "entity" in obj and obj["entity"] not in states:
+            errors.append(f"{where}: object class {obj['id']}: unknown entity {obj['entity']}")
     for grant in model.get("grants", []):
         if grant["role"] not in roles:
             errors.append(f"{where}: grant {grant['id']}: unknown role {grant['role']}")
@@ -110,6 +133,12 @@ def check_intent(intent: dict, model: dict, where: str, errors: list[str]) -> No
             for transition in rule.get("concerns", {}).get("transitions", [])
             if transition not in transitions
         )
+        objects = {obj["id"] for obj in model.get("object_classes", [])}
+        errors.extend(
+            f"{label}: unknown object class {obj}"
+            for obj in rule.get("concerns", {}).get("access", {}).get("object_classes", [])
+            if obj not in objects
+        )
 
 
 def check_findings(
@@ -123,8 +152,16 @@ def check_findings(
         label = f"{where}: finding {finding['id']}"
         if finding["persona"] not in personas:
             errors.append(f"{label}: unknown persona {finding['persona']}")
-        if finding["rule"] not in rules:
+        if finding["rule"] is not None and finding["rule"] not in rules:
             errors.append(f"{label}: unknown rule {finding['rule']}")
+        if "access_fact" in finding["witness"]:
+            facts = {fact["id"]: fact for fact in model.get("access", [])}
+            fact = facts.get(finding["witness"]["access_fact"])
+            if fact is None:
+                errors.append(f"{label}: unknown access fact {finding['witness']['access_fact']}")
+            elif "actor_class" in finding and finding["actor_class"] != fact["actor_class"]:
+                errors.append(f"{label}: actor class differs from its witness fact's")
+            continue
         current: dict[str, str] = {}
         for step in finding["witness"]["path"]:
             transition = by_id.get(step)
@@ -140,6 +177,70 @@ def check_findings(
             current[entity] = transition["to"]
 
 
+def check_topology(topology: dict, where: str, errors: list[str]) -> None:
+    nodes = {node["id"] for node in topology["nodes"]}
+    if len(nodes) != len(topology["nodes"]):
+        errors.append(f"{where}: topology: duplicate node ids")
+    edge_ids = [edge["id"] for edge in topology["edges"]]
+    if len(set(edge_ids)) != len(edge_ids):
+        errors.append(f"{where}: topology: duplicate edge ids")
+    for edge in topology["edges"]:
+        for end in ("from", "to"):
+            if edge[end] not in nodes:
+                errors.append(f"{where}: topology edge {edge['id']}: unknown {end} {edge[end]}")
+    for hole in topology["holes"]:
+        if hole["element"] not in nodes:
+            errors.append(f"{where}: topology hole: unknown element {hole['element']}")
+
+
+def check_area(area: dict, documents: dict[str, dict], where: str, errors: list[str]) -> None:
+    by_hash = {canonical_sha256(document): role for role, document in documents.items()}
+    for source in area["inputs"]:
+        if by_hash.get(source["sha256"]) != source["role"]:
+            errors.append(f"{where}: area input {source['role']}: no such document has that hash")
+    topology = documents["structural-topology"]
+    nodes = {node["id"] for node in topology["nodes"]}
+    members = set(area["members"])
+    errors.extend(
+        f"{where}: area member {member} is not a topology node"
+        for member in sorted(members - nodes)
+    )
+    crossing = {
+        edge["id"]: edge
+        for edge in topology["edges"]
+        if (edge["from"] in members) != (edge["to"] in members)
+    }
+    listed = {entry["edge"]: entry for entry in area["boundary"]}
+    errors.extend(
+        f"{where}: area boundary omits crossing edge {edge}"
+        for edge in sorted(set(crossing) - set(listed))
+    )
+    errors.extend(
+        f"{where}: area boundary lists {edge}, which does not cross it"
+        for edge in sorted(set(listed) - set(crossing))
+    )
+    for edge_id, entry in listed.items():
+        edge = crossing.get(edge_id)
+        if edge is None:
+            continue
+        inside = edge["from"] if edge["from"] in members else edge["to"]
+        outside = edge["to"] if inside == edge["from"] else edge["from"]
+        if (entry["inside"], entry["outside"]) != (inside, outside):
+            errors.append(f"{where}: area boundary {edge_id}: inside and outside are wrong")
+
+
+def check_crossings(findings: dict, area: dict, where: str, errors: list[str]) -> None:
+    examined = findings["examined"]
+    if examined.get("area_of_concern") != area["name"]:
+        return
+    boundary = {entry["edge"] for entry in area["boundary"]}
+    errors.extend(
+        f"{where}: findings name an unexamined crossing {edge} that is not on the boundary"
+        for edge in examined["unexamined_crossings"]
+        if edge not in boundary
+    )
+
+
 def main() -> int:
     errors: list[str] = []
     examples = sorted(path for path in (ROOT / "examples").iterdir() if path.is_dir())
@@ -153,6 +254,26 @@ def main() -> int:
             check_intent(intent, model, where, errors)
             if (example / "findings.json").exists():
                 check_findings(load(example / "findings.json"), intent, model, where, errors)
+        documents: dict[str, dict] = {}
+        if (example / "topology.json").exists():
+            documents["structural-topology"] = load(example / "topology.json")
+            check_topology(documents["structural-topology"], where, errors)
+        if (example / "clustering.json").exists():
+            documents["clustering"] = load(example / "clustering.json")
+        if (example / "area.json").exists():
+            area = load(example / "area.json")
+            if "structural-topology" not in documents:
+                errors.append(f"{where}: an area needs the topology it was derived from")
+            else:
+                check_area(area, documents, where, errors)
+            named = model.get("area_of_concern")
+            if named and named["sha256"] != canonical_sha256(area):
+                errors.append(f"{where}: the model's area-of-concern hash does not match area.json")
+            if (example / "findings.json").exists():
+                findings = load(example / "findings.json")
+                check_crossings(findings, area, where, errors)
+                if findings.get("model", {}).get("sha256") not in (None, canonical_sha256(model)):
+                    errors.append(f"{where}: the findings' model hash does not match model.json")
     for error in errors:
         print(error, file=sys.stderr)
     print(f"checked {len(examples)} example(s): {len(errors)} problem(s)")

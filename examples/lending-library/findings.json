@@ -1,12 +1,28 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "target": { "name": "lending-library", "revision": "synthetic-1" },
+  "model": {
+    "name": "examples/lending-library/model.json",
+    "sha256": "3ca36367b508217db72edf1c18b70a44f1bd087238692e85b9b32564fc6566e9"
+  },
   "abstraction": "A book's state is its circulation status. Who holds a loan is a stored attribute, not a state.",
   "intent": "examples/lending-library/intent.json",
   "examined": {
     "readings": ["reachability"],
     "personas": ["borrower", "desk"],
-    "not_examined": ["due dates and fines (excluded by the abstraction)"]
+    "not_examined": ["due dates and fines (excluded by the abstraction)"],
+    "area_of_concern": "circulation",
+    "unexamined_crossings": [
+      "calls:function:public.can_return(uuid,uuid)->function:public.is_librarian(uuid)",
+      "calls:function:public.lend(uuid,uuid,uuid)->function:public.is_librarian(uuid)",
+      "calls:policy:public.loans.loans_visible->function:public.is_librarian(uuid)",
+      "foreign_key:table:public.loans->table:public.members",
+      "writes:function:public.touch_book()->table:public.audit_log"
+    ],
+    "bounds": [
+      "three actor classes: the borrower, another member, a librarian",
+      "one book, on loan"
+    ]
   },
   "findings": [
     {
@@ -15,7 +31,34 @@
       "persona": "borrower",
       "rule": "only-staff-declare-a-book-lost",
       "witness": { "path": ["lend", "mark_lost"] },
-      "evidence": { "all_extracted": false, "inferred_elements": ["mark_lost"] }
+      "evidence": { "all_extracted_or_probed": false, "inferred_elements": ["mark_lost"] }
+    },
+    {
+      "id": "borrower-returns-own-loan",
+      "kind": "intended",
+      "persona": "borrower",
+      "actor_class": "member.borrower",
+      "rule": "members-return-their-own-loans",
+      "witness": { "access_fact": "return.member.borrower" },
+      "evidence": { "all_extracted_or_probed": true }
+    },
+    {
+      "id": "librarian-returns-a-loan",
+      "kind": "unqualified",
+      "persona": "desk",
+      "actor_class": "librarian",
+      "rule": null,
+      "witness": { "access_fact": "return.librarian" },
+      "evidence": { "all_extracted_or_probed": true }
+    },
+    {
+      "id": "other-member-cannot-return",
+      "kind": "unqualified",
+      "persona": "borrower",
+      "actor_class": "member.other",
+      "rule": null,
+      "witness": { "access_fact": "return.member.other" },
+      "evidence": { "all_extracted_or_probed": true }
     }
   ]
 }
