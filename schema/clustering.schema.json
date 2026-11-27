@@ -148,6 +148,21 @@
               "state-carrying": { "type": "integer" },
               "reference-only": { "type": "integer" }
             }
+          },
+          "attachments": {
+            "description": "Layered method only: for every non-table node, the pass it was attached in (0 for tables, -1 for a node placed with its own connected component), the cluster it joined, and the total edge weight it has to each cluster. Every touch outside its own cluster is an edge in `crossings`.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["node", "pass", "cluster", "touches"],
+              "additionalProperties": false,
+              "properties": {
+                "node": { "type": "string" },
+                "pass": { "type": "integer", "minimum": -1 },
+                "cluster": { "type": "string" },
+                "touches": { "type": "object", "additionalProperties": { "type": "number" } }
+              }
+            }
           }
         }
       }

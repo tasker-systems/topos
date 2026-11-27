@@ -52,6 +52,22 @@ Early. What exists:
     inputs.
 - [`examples/`](examples/): a small synthetic system written in those schemas.
 
+## Crossing-edge classes
+
+An area of concern lists every edge of the structural topology with exactly one end inside it.
+Clustering lists the edges between its clusters the same way. Each such edge is classed from the
+topology alone, by `topos.boundary`:
+
+| Edge | Class |
+|---|---|
+| `writes` | state-carrying: a write into the other side |
+| `reads` of a table | state-carrying if the table is written on its own side, or has no extracted writer (it is then written outside the extracted schema); reference-only if every extracted writer is on the reader's side |
+| `reads` of a view | state-carrying: a view exposes the state of what it reads |
+| `calls` | state-carrying unless the callee is immutable, whose answer depends only on its arguments |
+| `trigger_on`, `executes` | state-carrying: a trigger fires on a write and passes the row on |
+| `policy_on` | state-carrying: a policy guards the rows of its table |
+| `foreign_key`, `typed_by` | reference-only: a key or a type names the other side without reading its state |
+
 ## Scope
 
 Software comes first, and other rule systems later. Targets are systems owned by tasker-systems.

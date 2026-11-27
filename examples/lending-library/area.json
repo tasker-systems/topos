@@ -12,7 +12,7 @@
     {
       "role": "clustering",
       "ref": "examples/lending-library/clustering.json",
-      "sha256": "a79339d27895d0ffe318ee3e5158c16ca000a592e59bc3240c4560945e3f3d0d"
+      "sha256": "8a31b3eaef880342902d73d31abf825a29d48d7a77fd0bfb927b2850303a155c"
     }
   ],
   "derivation": {

@@ -92,7 +92,69 @@
           "basis": "a trigger fires on a write and passes the row to its function"
         }
       ],
-      "crossing_counts": { "state-carrying": 1, "reference-only": 0 }
+      "crossing_counts": { "state-carrying": 1, "reference-only": 0 },
+      "attachments": [
+        {
+          "node": "function:public.can_return(uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 4.0 }
+        },
+        {
+          "node": "function:public.is_librarian(uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 4.0 }
+        },
+        {
+          "node": "function:public.lend(uuid,uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 5.0 }
+        },
+        {
+          "node": "function:public.mark_lost(uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 3.0 }
+        },
+        {
+          "node": "function:public.return_book(uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 5.0 }
+        },
+        {
+          "node": "function:public.touch_book()",
+          "pass": 1,
+          "cluster": "layered/c001",
+          "touches": { "layered/c000": 3.0, "layered/c001": 2.0 }
+        },
+        {
+          "node": "policy:public.loans.loans_visible",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 4.0 }
+        },
+        {
+          "node": "trigger:public.books.books_audit",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 3.0, "layered/c001": 3.0 }
+        },
+        {
+          "node": "type:public.book_status",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 0.5 }
+        },
+        {
+          "node": "view:public.books_on_loan",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 2.0 }
+        }
+      ]
     },
     {
       "id": "louvain-r0.5",

@@ -6,7 +6,7 @@ reason. Its boundary is every topology edge with exactly one end inside, classed
 area without trusting the run that produced it.
 
     python3 -m topos.area --topology T --clustering C --algorithm layered \
-        --containing 'function:*.f(*' --rule 'the clusters that hold f' --name N --owner O
+        --guards --name N --owner O
 """
 
 from __future__ import annotations
@@ -20,6 +20,30 @@ from typing import Any
 
 from topos.boundary import Classifier
 from topos.canonical import sha256
+
+GUARD_RULE = (
+    "the union of the clusters, in the named algorithm's result, that contain at least one "
+    "row-level security policy or at least one function whose catalog return type is boolean"
+)
+
+
+def is_guard(node: dict[str, Any]) -> bool:
+    """A row-level security policy, or a function whose catalog return type is boolean.
+
+    The test reads only the catalog signature, never a name.
+    """
+    if node["kind"] == "policy":
+        return True
+    return node["kind"] == "function" and node.get("returns") == "boolean"
+
+
+def clusters_with_guards(
+    topology: dict[str, Any], clustering: dict[str, Any], algorithm: str
+) -> list[str]:
+    """The ids of the clusters that `GUARD_RULE` selects, in the result's order."""
+    guards = {node["id"] for node in topology["nodes"] if is_guard(node)}
+    run = _algorithm(clustering, algorithm)
+    return [cluster["id"] for cluster in run["clusters"] if guards & set(cluster["members"])]
 
 
 def clusters_containing(
@@ -102,6 +126,7 @@ def derive(
     hand_edits: list[dict[str, str]] | None = None,
     exclusions: list[dict[str, str]] | None = None,
     refs: dict[str, str] | None = None,
+    applied_by: str = "",
 ) -> dict[str, Any]:
     """An area-of-concern document (schema 0.2) drawn from `clustering`."""
     edits = list(hand_edits or [])
@@ -125,6 +150,7 @@ def derive(
             {"role": "clustering", "ref": refs.get("clustering", ""), "sha256": sha256(clustering)},
         ],
         "derivation": {
+            **({"applied_by": applied_by} if applied_by else {}),
             "method": "clustering",
             "algorithm": algorithm,
             "clusters": list(clusters),
@@ -191,17 +217,32 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         help="include every cluster holding a node matching this pattern",
     )
-    parser.add_argument("--rule", required=True, help="the selection rule, in words")
+    parser.add_argument(
+        "--guards",
+        action="store_true",
+        help="include every cluster that GUARD_RULE selects, and record GUARD_RULE as the rule",
+    )
+    parser.add_argument("--rule", help="the selection rule, in words")
     parser.add_argument("--name", required=True)
     parser.add_argument("--owner", required=True)
     parser.add_argument("--hand-edits", type=Path, help="a JSON list of hand edits")
     parser.add_argument("--topology-ref", default="")
     parser.add_argument("--clustering-ref", default="")
+    parser.add_argument("--applied-by", default="", help="the code applying the rule")
     parser.add_argument("--out", type=Path)
     args = parser.parse_args(argv)
     topology = json.loads(args.topology.read_text(encoding="utf-8"))
     clustering = json.loads(args.clustering.read_text(encoding="utf-8"))
     clusters = list(args.cluster)
+    if args.guards:
+        clusters += [
+            c
+            for c in clusters_with_guards(topology, clustering, args.algorithm)
+            if c not in clusters
+        ]
+    rule = args.rule or (GUARD_RULE if args.guards else None)
+    if not rule:
+        parser.error("state the selection rule with --rule, or use --guards")
     for cluster in clusters_containing(clustering, args.algorithm, args.containing):
         if cluster not in clusters:
             clusters.append(cluster)
@@ -211,11 +252,12 @@ def main(argv: list[str] | None = None) -> int:
         clustering,
         algorithm=args.algorithm,
         clusters=clusters,
-        rule=args.rule,
+        rule=rule,
         name=args.name,
         owner=args.owner,
         hand_edits=edits,
         refs={"structural-topology": args.topology_ref, "clustering": args.clustering_ref},
+        applied_by=args.applied_by,
     )
     text = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
     if args.out:

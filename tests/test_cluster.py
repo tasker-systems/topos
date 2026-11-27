@@ -95,3 +95,24 @@ def test_the_result_does_not_depend_on_the_process_hash_seed(tmp_path: Path) -> 
         )
         outputs.append(out.read_text())
     assert outputs[0] == outputs[1] == outputs[2]
+
+
+def test_layered_records_every_touch_and_each_outside_touch_is_a_crossing() -> None:
+    topology = two_neighbourhoods()
+    layered = cluster_topology(topology)["algorithms"][0]
+    attachments = {item["node"]: item for item in layered["attachments"]}
+    tables = {node["id"] for node in topology["nodes"] if node["kind"] == "table"}
+    assert set(attachments) == {node["id"] for node in topology["nodes"]} - tables
+    peek = attachments["function:a_peek()"]
+    assert len(peek["touches"]) == 2
+    assert next(iter(peek["touches"])) == peek["cluster"]
+    edges = {edge["id"]: edge for edge in topology["edges"]}
+    for item in layered["attachments"]:
+        outside = set(item["touches"]) - {item["cluster"]}
+        crossed = set()
+        for crossing in layered["crossings"]:
+            edge = edges[crossing["edge"]]
+            if item["node"] in (edge["from"], edge["to"]):
+                crossed |= {crossing["from_cluster"], crossing["to_cluster"]}
+        assert outside <= crossed, item["node"]
+    assert "attachments" not in cluster_topology(topology)["algorithms"][1]

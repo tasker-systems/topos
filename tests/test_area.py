@@ -67,3 +67,43 @@ def test_the_example_area_verifies_against_its_inputs() -> None:
     topology = json.loads((EXAMPLE / "topology.json").read_text())
     clustering = json.loads((EXAMPLE / "clustering.json").read_text())
     assert verify(area, topology, clustering) == []
+
+
+def test_the_guard_rule_selects_by_signature_not_name() -> None:
+    from synthetic import edge, node, topology
+
+    from topos.area import GUARD_RULE, clusters_with_guards
+
+    nodes = [
+        node("table:x0"),
+        node("table:x1"),
+        node("table:y0"),
+        node("table:y1"),
+        node("function:check_it(uuid)", returns="text", volatility="stable"),
+        node("function:p(uuid)", returns="boolean", volatility="stable"),
+    ]
+    edges = [
+        edge("foreign_key", "table:x0", "table:x1"),
+        edge("foreign_key", "table:y0", "table:y1"),
+        edge("reads", "function:check_it(uuid)", "table:x0"),
+        edge("reads", "function:p(uuid)", "table:y0"),
+    ]
+    synthetic = topology(nodes, edges)
+    clustering = cluster_topology(synthetic)
+    chosen = clusters_with_guards(synthetic, clustering, "layered")
+    run = clustering["algorithms"][0]
+    members = set().union(*(set(c["members"]) for c in run["clusters"] if c["id"] in chosen))
+    assert "function:p(uuid)" in members
+    assert "function:check_it(uuid)" not in members
+    area = derive(
+        synthetic,
+        clustering,
+        algorithm="layered",
+        clusters=chosen,
+        rule=GUARD_RULE,
+        name="guards",
+        owner="tester",
+        applied_by="topos test",
+    )
+    jsonschema.validate(area, SCHEMA)
+    assert verify(area, synthetic, clustering) == []

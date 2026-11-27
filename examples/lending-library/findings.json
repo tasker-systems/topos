@@ -3,7 +3,7 @@
   "target": { "name": "lending-library", "revision": "synthetic-1" },
   "model": {
     "name": "examples/lending-library/model.json",
-    "sha256": "f3e6cecde356d62fcc85962824dafb263268f12dba30974d85eb1e3a6147ceab"
+    "sha256": "1803a9696b62ff4bf800314bcc9581b2295d2187fd4e48a9f13feaeec092a732"
   },
   "abstraction": "A book's state is its circulation status. Who holds a loan is a stored attribute, not a state.",
   "intent": "examples/lending-library/intent.json",

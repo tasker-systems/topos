@@ -91,7 +91,12 @@ def _louvain(graph: nx.Graph, resolution: float) -> list[set[str]]:
     return [{names[i] for i in part} for part in parts]
 
 
-def _layered(topology: dict[str, Any], graph: nx.Graph) -> list[set[str]]:
+def _layered(topology: dict[str, Any], graph: nx.Graph) -> tuple[list[set[str]], dict[str, int]]:
+    """The layered partition, and the pass in which each node was placed.
+
+    Tables are placed in pass 0. A node that joins nothing already placed is placed with its
+    connected component after the last pass, recorded as pass -1.
+    """
     tables = sorted(node["id"] for node in topology["nodes"] if node["kind"] == "table")
     keys = _graph(topology, {"foreign_key"}).subgraph(tables).copy()
     table_parts = sorted(
@@ -106,8 +111,11 @@ def _layered(topology: dict[str, Any], graph: nx.Graph) -> list[set[str]]:
     # only through nodes placed by an earlier pass, so a node joins by its distance from the
     # tables and the result does not depend on the order nodes are visited. A tie goes to the
     # lowest cluster index (the larger cluster, then the smaller first member).
+    placed_in = dict.fromkeys(assignment, 0)
     pending = sorted(node for node in graph.nodes if node not in assignment)
+    attach_pass = 0
     while pending:
+        attach_pass += 1
         placed = {}
         for node in pending:
             strength: dict[int, float] = defaultdict(float)
@@ -120,17 +128,19 @@ def _layered(topology: dict[str, Any], graph: nx.Graph) -> list[set[str]]:
         if not placed:
             break
         assignment.update(placed)
+        placed_in.update(dict.fromkeys(placed, attach_pass))
         pending = [node for node in pending if node not in placed]
     # What joins nothing already clustered forms clusters of its own, by connected component.
     next_index = max(assignment.values(), default=-1) + 1
     for component in sorted(nx.connected_components(graph.subgraph(pending)), key=min):
         for node in component:
             assignment[node] = next_index
+            placed_in[node] = -1
         next_index += 1
     parts: dict[int, set[str]] = defaultdict(set)
     for node, index in assignment.items():
         parts[index].add(node)
-    return list(parts.values())
+    return list(parts.values()), placed_in
 
 
 def _label_propagation(graph: nx.Graph) -> list[set[str]]:
@@ -169,6 +179,7 @@ def _describe(
     topology: dict[str, Any],
     graph: nx.Graph,
     classifier: Classifier,
+    placed_in: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     kinds = {node["id"]: node["kind"] for node in topology["nodes"]}
     ordered = sorted(parts, key=lambda part: (-len(part), min(part)))
@@ -207,7 +218,7 @@ def _describe(
             }
         )
     counts = Counter(item["class"] for item in crossings)
-    return {
+    result = {
         "id": name,
         "method": method,
         "parameters": parameters,
@@ -219,6 +230,35 @@ def _describe(
             "reference-only": counts["reference-only"],
         },
     }
+    if placed_in is not None:
+        result["attachments"] = _attachments(graph, cluster_of, placed_in, kinds)
+    return result
+
+
+def _attachments(
+    graph: nx.Graph, cluster_of: dict[str, str], placed_in: dict[str, int], kinds: dict[str, str]
+) -> list[dict[str, Any]]:
+    """For every node the layered method attached, the weight it touches each cluster with.
+
+    The winner is only one entry: a node that touches several clusters keeps every other touch,
+    and each of those touches is an edge in the result's crossings.
+    """
+    attachments = []
+    for node in sorted(placed_in):
+        if kinds[node] == "table":
+            continue
+        touches: dict[str, float] = defaultdict(float)
+        for neighbour, data in graph[node].items():
+            touches[cluster_of[neighbour]] += data["weight"]
+        attachments.append(
+            {
+                "node": node,
+                "pass": placed_in[node],
+                "cluster": cluster_of[node],
+                "touches": dict(sorted(touches.items(), key=lambda item: (-item[1], item[0]))),
+            }
+        )
+    return attachments
 
 
 def cluster_topology(topology: dict[str, Any], *, topology_ref: str = "") -> dict[str, Any]:
@@ -239,7 +279,7 @@ def cluster_topology(topology: dict[str, Any], *, topology_ref: str = "") -> dic
                 "attach_by": "strongest weighted join",
                 "weights": weights,
             },
-            _layered(topology, graph),
+            *_layered(topology, graph),
         )
     ]
     for resolution in PARAMETERS["louvain_resolutions"]:
@@ -249,6 +289,7 @@ def cluster_topology(topology: dict[str, Any], *, topology_ref: str = "") -> dic
                 "louvain",
                 {"resolution": resolution, "seed": seed, "weights": weights},
                 _louvain(graph, resolution),
+                None,
             )
         )
     runs.append(
@@ -257,11 +298,12 @@ def cluster_topology(topology: dict[str, Any], *, topology_ref: str = "") -> dic
             "asynchronous label propagation",
             {"seed": seed, "weights": weights},
             _label_propagation(graph),
+            None,
         )
     )
     algorithms = [
-        _describe(name, method, parameters, parts, topology, graph, classifier)
-        for name, method, parameters, parts in runs
+        _describe(name, method, parameters, parts, topology, graph, classifier, placed_in)
+        for name, method, parameters, parts, placed_in in runs
     ]
     assignments = {
         run["id"]: {

@@ -72,6 +72,11 @@
               "description": "The selection rule, stated before the clustering output was read.",
               "type": "string",
               "minLength": 1
+            },
+            "applied_by": {
+              "description": "The code that applied the rule, such as a tagged commit, so the selection can be replayed.",
+              "type": "string",
+              "minLength": 1
             }
           }
         },
