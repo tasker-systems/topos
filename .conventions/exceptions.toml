@@ -3,3 +3,8 @@
 # path = "ruff.toml"
 # key = "target-version"
 # reason = "the plugin's declared floor is py39"
+
+[[exception]]
+path = "ruff.toml"
+key = "target-version"
+reason = "the floor is Python 3.12 because networkx>=3.7, the clustering dependency, requires it; owner ruling 2026-11-27"
