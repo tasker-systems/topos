@@ -37,9 +37,30 @@ writes, grants) and checks it against what the system's owner declared as intend
 
 ## Implementation language
 
-Not decided. The likely split is Rust for extraction and checking, and Python for the numeric
-readings, with the system-model document as the interface between them. Until a decision in
-`+tasker-systems/topos` settles it, keep each component behind that document.
+Python, for now: extraction, probing, clustering and the numeric readings, under the adopted
+`ruff.toml`. Rust enters with the first extractor that needs it, together with the baseline's Rust
+configuration. The decision is in `+tasker-systems/topos`. Components still meet only at the
+versioned documents in [`schema/`](schema/).
+
+## Tools and commands
+
+[mise](https://mise.jdx.dev) pins Python and uv in [`mise.toml`](mise.toml). uv installs the
+Python dependencies from [`uv.lock`](uv.lock). CI runs the same commands.
+
+```sh
+mise install                                   # Python and uv, at the pinned versions
+uv sync                                        # the project and every dependency group
+uv run pytest                                  # tests; database tests need TOPOS_TEST_DSN
+uv run ruff check . && uv run ruff format --check .
+uv run python -I tools/check_examples.py
+python3 -I .conventions/baseline/tools/conventions.py check
+python3 -I .conventions/baseline/tools/conventions.py witness
+```
+
+- Add or change a dependency with `uv add` or `uv lock`, and commit `uv.lock` with
+  `pyproject.toml`. CI runs with `--locked`, so a stale lock fails. *(gated: `ci.yml#python-tests`)*
+- uv resolves only releases at least 7 days old (`exclude-newer` in `pyproject.toml`), and mise
+  holds new tool releases for 7 days (SC-IN-1).
 
 ## Commits and PRs
 

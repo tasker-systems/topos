@@ -2,3 +2,7 @@
 # canonical configuration, adopted in `extends` mode (.conventions/consumer.toml), so
 # `conventions.py check` fails if this file overrides one of its keys.
 extend = ".conventions/baseline/python/ruff.toml"
+
+# PY-VER-1: equals `requires-python` in pyproject.toml. The baseline's floor is py311; this departure
+# is recorded in .conventions/exceptions.toml.
+target-version = "py312"
