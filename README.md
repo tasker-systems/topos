@@ -40,8 +40,16 @@ Early. What exists:
   - The **declared intent**, and the **findings report** that compares a model with it. Every
     observed interaction is reported as intended, contrary to intent, or unqualified.
   - The **structural topology**: the whole-system dependency graph that clustering reads.
+  - The **clustering**: clusters proposed from a topology by several algorithms, the edges that
+    cross between them, and where the algorithms disagree.
   - The **area of concern**: the part of the system under analysis, and every edge that crosses
     its boundary.
+- [`src/topos/`](src/topos/): the first components.
+  - `topos.extract.postgres` reads a PostgreSQL database's applied schema into a structural
+    topology.
+  - `topos.cluster` clusters a topology.
+  - `topos.area` derives an area of concern from a clustering, and verifies one against its
+    inputs.
 - [`examples/`](examples/): a small synthetic system written in those schemas.
 
 ## Scope

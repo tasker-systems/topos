@@ -22,6 +22,7 @@ SCHEMAS = {
     "findings.json": "findings.schema.json",
     "topology.json": "structural-topology.schema.json",
     "area.json": "area-of-concern.schema.json",
+    "clustering.json": "clustering.schema.json",
 }
 
 
@@ -193,6 +194,28 @@ def check_topology(topology: dict, where: str, errors: list[str]) -> None:
             errors.append(f"{where}: topology hole: unknown element {hole['element']}")
 
 
+def check_clustering(clustering: dict, topology: dict, where: str, errors: list[str]) -> None:
+    nodes = sorted(node["id"] for node in topology["nodes"])
+    for run in clustering["algorithms"]:
+        label = f"{where}: clustering {run['id']}"
+        cluster_of = {}
+        for cluster in run["clusters"]:
+            for member in cluster["members"]:
+                if member in cluster_of:
+                    errors.append(f"{label}: {member} is in two clusters")
+                cluster_of[member] = cluster["id"]
+        if sorted(cluster_of) != nodes:
+            errors.append(f"{label}: the clusters are not a partition of the topology's nodes")
+            continue
+        crossing = {
+            edge["id"]
+            for edge in topology["edges"]
+            if cluster_of[edge["from"]] != cluster_of[edge["to"]]
+        }
+        if {item["edge"] for item in run["crossings"]} != crossing:
+            errors.append(f"{label}: crossings are not exactly the edges between clusters")
+
+
 def check_area(area: dict, documents: dict[str, dict], where: str, errors: list[str]) -> None:
     by_hash = {canonical_sha256(document): role for role, document in documents.items()}
     for source in area["inputs"]:
@@ -205,6 +228,16 @@ def check_area(area: dict, documents: dict[str, dict], where: str, errors: list[
         f"{where}: area member {member} is not a topology node"
         for member in sorted(members - nodes)
     )
+    derivation = area["derivation"]
+    if derivation["method"] == "clustering":
+        runs = {run["id"]: run for run in documents.get("clustering", {}).get("algorithms", [])}
+        run = runs.get(derivation["algorithm"], {"clusters": []})
+        by_id = {cluster["id"]: set(cluster["members"]) for cluster in run["clusters"]}
+        expected = set().union(*(by_id.get(cluster, set()) for cluster in derivation["clusters"]))
+        for edit in area["hand_edits"]:
+            (expected.add if edit["op"] == "add" else expected.discard)(edit["element"])
+        if expected != members:
+            errors.append(f"{where}: area members are not its clusters with its hand edits")
     crossing = {
         edge["id"]: edge
         for edge in topology["edges"]
@@ -260,6 +293,9 @@ def main() -> int:
             check_topology(documents["structural-topology"], where, errors)
         if (example / "clustering.json").exists():
             documents["clustering"] = load(example / "clustering.json")
+            check_clustering(
+                documents["clustering"], documents["structural-topology"], where, errors
+            )
         if (example / "area.json").exists():
             area = load(example / "area.json")
             if "structural-topology" not in documents:

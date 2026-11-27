@@ -8,6 +8,7 @@ dynamic = ["version"]
 dependencies = [
     "pglast>=8.9,<9",
     "psycopg[binary]>=3.3,<4",
+    "networkx>=3.7,<4",
 ]
 
 [project.optional-dependencies]
