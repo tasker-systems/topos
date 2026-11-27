@@ -1,0 +1,5 @@
+# This repository's status for each baseline rule, in the register's vocabulary:
+# gated: <path>[#job], partial: …, practiced, convention: …, uncovered, unexamined, n/a.
+# `reviewed_at` is the baseline revision these statuses were reviewed against (check F).
+reviewed_at = "f2bc55b17e63e7dd3a94dc5c4ac7657d43d495bf"
+[rules]

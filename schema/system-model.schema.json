@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/system-model.schema.json",
+  "title": "Topos system model (draft 0.1)",
+  "description": "What a target system allows, at one pinned revision and under one declared abstraction: entities and their states, guarded transitions, the persistent attributes transitions read and write, and grants of capabilities to roles. Every element carries provenance, so an extracted element can always be told apart from an inferred one.",
+  "type": "object",
+  "required": ["schema_version", "target", "abstraction", "roles", "entities", "attributes", "transitions"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "target": {
+      "description": "The system modeled, at the revision modeled.",
+      "type": "object",
+      "required": ["name", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "revision": { "description": "An immutable identifier, such as a full commit SHA.", "type": "string", "minLength": 1 },
+        "kind": { "enum": ["software", "rules"] }
+      }
+    },
+    "abstraction": {
+      "description": "Which differences count as distinct states. This is the choice that keeps the model finite. It is declared and owned, never implicit.",
+      "type": "object",
+      "required": ["owner", "statement"],
+      "additionalProperties": false,
+      "properties": {
+        "owner": { "description": "Who owns this choice.", "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "excluded": { "description": "What the abstraction deliberately collapses or leaves out.", "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "roles": {
+      "description": "The actor roles a transition or grant can name.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "states", "initial", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "states": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["id"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "$ref": "#/$defs/id" },
+                "terminal": { "description": "No transition leaves this state; it is an absorbing outcome.", "type": "boolean", "default": false }
+              }
+            }
+          },
+          "initial": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "attributes": {
+      "description": "Persistent state that transitions write and guards read, such as a table column or a stored field. The write-to-later-read pairs over these are how one entity's lifecycle reaches into another's.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "entity": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "entity", "from", "to", "actor_roles", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "entity": { "$ref": "#/$defs/id" },
+          "from": { "$ref": "#/$defs/id" },
+          "to": { "$ref": "#/$defs/id" },
+          "actor_roles": { "description": "Roles that may fire this transition, as the target enforces it, not as intended.", "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "guard": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "description": { "type": "string" },
+              "reads": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+            }
+          },
+          "writes": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "grants": {
+      "description": "A role holding a capability over a scope, as the target enforces it.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "role", "capability", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "role": { "$ref": "#/$defs/id" },
+          "capability": { "$ref": "#/$defs/id" },
+          "scope": { "type": "string" },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" },
+    "provenance": {
+      "description": "Where an element came from. `extracted` means it was read directly from the target, and names the source. `inferred` means it was proposed by an agent, a model or a person, and names the proposer and a confidence.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "source"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "extracted" },
+            "source": { "description": "A path, optionally with a line, or a symbol in the target at the pinned revision.", "type": "string", "minLength": 1 },
+            "extractor": { "type": "string" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "proposer", "confidence"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "inferred" },
+            "proposer": { "type": "string", "minLength": 1 },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "basis": { "description": "What the proposal rests on.", "type": "string" }
+          }
+        }
+      ]
+    }
+  }
+}

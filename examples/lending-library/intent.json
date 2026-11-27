@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1",
+  "target": { "name": "lending-library" },
+  "owner": "example-owner",
+  "personas": [
+    { "id": "borrower", "description": "a member with a book on loan", "roles": ["member"] },
+    { "id": "desk", "description": "staff at the circulation desk", "roles": ["librarian"] }
+  ],
+  "rules": [
+    {
+      "id": "members-return-their-own-loans",
+      "statement": "A member may return a book they have borrowed.",
+      "polarity": "may",
+      "applies_to": { "personas": ["borrower"] },
+      "concerns": { "transitions": ["return"] },
+      "source": "docs/circulation.md#returns"
+    },
+    {
+      "id": "only-staff-declare-a-book-lost",
+      "statement": "Only a librarian declares a book lost.",
+      "polarity": "never",
+      "applies_to": { "roles": ["member"] },
+      "concerns": { "transitions": ["mark_lost"] },
+      "source": "docs/circulation.md#lost-books"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "return-a-loan",
+      "persona": "borrower",
+      "given": "a book is on loan to me",
+      "when": "I return it",
+      "then": "the book is available again"
+    }
+  ]
+}

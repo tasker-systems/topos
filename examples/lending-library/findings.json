@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.1",
+  "target": { "name": "lending-library", "revision": "synthetic-1" },
+  "abstraction": "A book's state is its circulation status. Who holds a loan is a stored attribute, not a state.",
+  "intent": "examples/lending-library/intent.json",
+  "examined": {
+    "readings": ["reachability"],
+    "personas": ["borrower", "desk"],
+    "not_examined": ["due dates and fines (excluded by the abstraction)"]
+  },
+  "findings": [
+    {
+      "id": "borrower-can-declare-own-loan-lost",
+      "kind": "reachable-not-intended",
+      "persona": "borrower",
+      "rule": "only-staff-declare-a-book-lost",
+      "witness": { "path": ["lend", "mark_lost"] },
+      "evidence": { "all_extracted": false, "inferred_elements": ["mark_lost"] }
+    }
+  ]
+}

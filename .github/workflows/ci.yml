@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # It reads only files and the public baseline repository, so this job holds no secret and must
+  # not gain one (the witness fails if it does). It needs python3 >= 3.11 and git, both on the runner.
+  conventions:
+    name: Conventions baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Python and git versions
+        run: python3 --version && git --version
+
+      - name: Check against the pinned baseline
+        run: python3 -I .conventions/baseline/tools/conventions.py check
+
+      - name: Witness — each check refuses a seeded violation
+        run: python3 -I .conventions/baseline/tools/conventions.py witness
+
+  # Every example validates against the draft schemas, and every id and witness path in it resolves.
+  examples:
+    name: Examples match the schemas
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      JSONSCHEMA_VERSION: 4.26.0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install jsonschema
+        run: python3 -m pip install --user "jsonschema==${JSONSCHEMA_VERSION}"
+
+      - name: Check examples
+        run: python3 -I tools/check_examples.py
+
+  # Every .py file, from the root ruff.toml (the baseline's canonical configuration, PY-LINT-1).
+  python-lint:
+    name: Python lint (ruff, every .py)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RUFF_VERSION: 0.16.9
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install ruff
+        run: python3 -m pip install --user "ruff==${RUFF_VERSION}"
+
+      - name: Lint
+        run: ruff check --no-cache .
+
+      - name: Format
+        run: ruff format --check --no-cache .
+
+  ci-success:
+    name: CI Success
+    if: always()
+    needs: [conventions, examples, python-lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every required job passed
+        run: |
+          test "${{ needs.conventions.result }}" = success
+          test "${{ needs.examples.result }}" = success
+          test "${{ needs.python-lint.result }}" = success

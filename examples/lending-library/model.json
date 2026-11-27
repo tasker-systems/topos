@@ -1,0 +1,63 @@
+{
+  "schema_version": "0.1",
+  "target": { "name": "lending-library", "revision": "synthetic-1", "kind": "software" },
+  "abstraction": {
+    "owner": "example-owner",
+    "statement": "A book's state is its circulation status. Who holds a loan is a stored attribute, not a state.",
+    "excluded": ["due dates and fines", "multiple copies of one title"]
+  },
+  "roles": [
+    { "id": "member", "provenance": { "kind": "extracted", "source": "src/roles.rs:3" } },
+    { "id": "librarian", "provenance": { "kind": "extracted", "source": "src/roles.rs:4" } }
+  ],
+  "entities": [
+    {
+      "id": "book",
+      "states": [
+        { "id": "available" },
+        { "id": "on_loan" },
+        { "id": "lost", "terminal": true }
+      ],
+      "initial": ["available"],
+      "provenance": { "kind": "extracted", "source": "src/book.rs:10" }
+    }
+  ],
+  "attributes": [
+    { "id": "loan.borrower", "entity": "book", "provenance": { "kind": "extracted", "source": "migrations/0001_loans.sql:4" } }
+  ],
+  "transitions": [
+    {
+      "id": "lend",
+      "entity": "book",
+      "from": "available",
+      "to": "on_loan",
+      "actor_roles": ["librarian"],
+      "writes": ["loan.borrower"],
+      "provenance": { "kind": "extracted", "source": "src/handlers/lend.rs:12" }
+    },
+    {
+      "id": "return",
+      "entity": "book",
+      "from": "on_loan",
+      "to": "available",
+      "actor_roles": ["member", "librarian"],
+      "guard": { "description": "the actor is the borrower, or is a librarian", "reads": ["loan.borrower"] },
+      "writes": ["loan.borrower"],
+      "provenance": { "kind": "extracted", "source": "src/handlers/return.rs:9" }
+    },
+    {
+      "id": "mark_lost",
+      "entity": "book",
+      "from": "on_loan",
+      "to": "lost",
+      "actor_roles": ["member", "librarian"],
+      "guard": { "description": "reuses the return guard: the actor is the borrower, or is a librarian", "reads": ["loan.borrower"] },
+      "provenance": {
+        "kind": "inferred",
+        "proposer": "example-agent",
+        "confidence": 0.8,
+        "basis": "the handler calls the same guard function as return; the call is through a trait object, so extraction alone could not resolve it"
+      }
+    }
+  ]
+}
