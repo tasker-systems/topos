@@ -1,0 +1,95 @@
+{
+  "schema_version": "0.2",
+  "name": "lending-library-loans",
+  "owner": "example-owner",
+  "statement": "A member's role, against a book in each circulation status.",
+  "target": { "name": "lending-library" },
+  "area_of_concern": {
+    "name": "circulation",
+    "sha256": "b218e295119818594a5922a4fb38e4e81cf260c375ec3884039d96ac6fc2d618"
+  },
+  "inputs": [
+    {
+      "role": "area-of-concern",
+      "ref": "area.json",
+      "sha256": "b218e295119818594a5922a4fb38e4e81cf260c375ec3884039d96ac6fc2d618"
+    },
+    {
+      "role": "declaration",
+      "sha256": "e4e05e6ae368976a8722fb325efbc6e82c5675c0eb0da01558b0047de781094e"
+    }
+  ],
+  "derivation": {
+    "applied_by": "topos.probe.abstraction",
+    "rules": [
+      "a predicate is an area member that is a function whose catalog return type is boolean",
+      "a predicate whose body is not sql or plpgsql is excluded: it cannot be parsed",
+      "every parameter is bound to the fixture handles supplying a table it identifies, or to the schema's literals for it, or left to its default; otherwise the predicate is excluded",
+      "a predicate with no argument bound to a handle is excluded: its answer cannot vary with the axes",
+      "volatility does not exclude; every call is rolled back, and a volatile call is checked for writes"
+    ]
+  },
+  "axes": [
+    {
+      "id": "role",
+      "side": "actor",
+      "values": ["member", "librarian"],
+      "source": "check constraint literals on public.members.role"
+    },
+    {
+      "id": "status",
+      "side": "object",
+      "values": ["available", "on_loan", "lost"],
+      "source": "labels of enum public.book_status"
+    }
+  ],
+  "handles": [
+    { "id": "actor", "table": "public.members" },
+    { "id": "book", "table": "public.books" }
+  ],
+  "actor_handle": "actor",
+  "predicates": [
+    {
+      "id": "function:public.can_return(uuid,uuid)",
+      "function": { "schema": "public", "name": "can_return" },
+      "volatility": "stable",
+      "parameters": [
+        {
+          "name": "actor",
+          "type": "uuid",
+          "bind": { "handles": ["actor"] },
+          "basis": [
+            "public.members: compared with foreign key public.loans.borrower in function:public.can_return(uuid,uuid)",
+            "public.members: passed to function:public.is_librarian(uuid) as actor; compared with primary key public.members.id in function:public.is_librarian(uuid)"
+          ]
+        },
+        {
+          "name": "book",
+          "type": "uuid",
+          "bind": { "handles": ["book"] },
+          "basis": [
+            "public.books: compared with foreign key public.loans.book_id in function:public.can_return(uuid,uuid)",
+            "public.loans: compared with primary key public.loans.book_id in function:public.can_return(uuid,uuid)",
+            "identifies tables no handle supplies: public.loans"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "function:public.is_librarian(uuid)",
+      "function": { "schema": "public", "name": "is_librarian" },
+      "volatility": "stable",
+      "parameters": [
+        {
+          "name": "actor",
+          "type": "uuid",
+          "bind": { "handles": ["actor"] },
+          "basis": [
+            "public.members: compared with primary key public.members.id in function:public.is_librarian(uuid)"
+          ]
+        }
+      ]
+    }
+  ],
+  "excluded": []
+}

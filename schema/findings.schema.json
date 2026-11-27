@@ -123,6 +123,19 @@
           "actor_class": {
             "description": "For an access finding, the situated actor class it concerns.",
             "type": "string"
+          },
+          "action": {
+            "description": "For an access finding, its witness fact's action.",
+            "type": "string"
+          },
+          "object_class": {
+            "description": "For an access finding, its witness fact's object class.",
+            "type": "string"
+          },
+          "conflicting_rules": {
+            "description": "When the witness fact is matched by both a `may` and a `never` rule, every rule that matches it, so that an intent contradicting itself is visible as such.",
+            "type": "array",
+            "items": { "type": "string" }
           }
         },
         "allOf": [
@@ -132,6 +145,47 @@
             "else": { "properties": { "rule": { "type": "string" } } }
           }
         ]
+      }
+    },
+    "indeterminate": {
+      "description": "Calls the model records as answered with something other than a boolean, counted per action and outcome. They are never counted as allowed or denied, and never satisfy or violate a rule.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "outcome", "count"],
+        "additionalProperties": false,
+        "properties": {
+          "action": { "type": "string" },
+          "outcome": { "enum": ["error", "null"] },
+          "count": { "type": "integer", "minimum": 1 },
+          "details": {
+            "description": "Each distinct detail, with its count.",
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+    "summary": {
+      "description": "Counts of findings per kind, overall and per action, and of what was not constructed or was indeterminate, so that a large unqualified middle shows as a number.",
+      "type": "object",
+      "required": ["by_kind"],
+      "additionalProperties": false,
+      "properties": {
+        "facts": { "type": "integer", "minimum": 0 },
+        "by_kind": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "by_action": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "not_constructed": { "type": "integer", "minimum": 0 },
+        "indeterminate": { "type": "integer", "minimum": 0 }
       }
     }
   },

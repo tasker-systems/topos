@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/abstraction.schema.json",
+  "title": "Topos probe abstraction (0.2)",
+  "description": "What a probe observes and how: the axes whose full cartesian product it enumerates, the fixture handles a builder supplies for each combination, the predicates it calls with every argument binding, and what it excludes and why. It is declared and owned, and frozen before the first probe runs. Every value comes from the schema or carries the reason it was supplied by hand. Nothing in it is drawn from intent.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "name",
+    "owner",
+    "statement",
+    "target",
+    "axes",
+    "handles",
+    "actor_handle",
+    "predicates",
+    "excluded"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.2" },
+    "name": { "type": "string", "minLength": 1 },
+    "owner": { "description": "Who owns this abstraction.", "type": "string", "minLength": 1 },
+    "statement": {
+      "description": "Which differences count as distinct, in a sentence or two.",
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "description": "The system probed. The revision is left out: one abstraction is applied at every revision compared.",
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": { "name": { "type": "string", "minLength": 1 } }
+    },
+    "area_of_concern": {
+      "description": "The area-of-concern declaration the predicates were selected from, by name and content hash.",
+      "type": "object",
+      "required": ["name", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "inputs": {
+      "description": "Each document this abstraction was derived from, by content hash.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["role", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "role": { "type": "string", "minLength": 1 },
+          "ref": { "type": "string" },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "derivation": {
+      "description": "What produced the predicate list and the axes, so it can be replayed.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "applied_by": { "type": "string" },
+        "rules": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "axes": {
+      "description": "The axes probed. Their full cartesian product is enumerated; no case is hand-picked.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "side", "values", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "side": {
+            "description": "`actor`: the axis places the situated actor. `object`: it places the object acted on.",
+            "enum": ["actor", "object"]
+          },
+          "values": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/value" } },
+          "source": {
+            "description": "Where the values come from: an enum, a check constraint, a column set, or a hand declaration with its reason.",
+            "type": "string",
+            "minLength": 1
+          },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "handles": {
+      "description": "What a fixture builder supplies for each combination, such as the id of a row it inserted.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "table"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "table": {
+            "description": "The table whose row the handle names, schema-qualified.",
+            "type": "string",
+            "minLength": 1
+          },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "actor_handle": {
+      "description": "The handle that names the acting principal.",
+      "$ref": "#/$defs/id"
+    },
+    "predicates": {
+      "description": "The functions called, each with a binding for every parameter.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "function", "volatility", "parameters"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "description": "The function's id in the structural topology.",
+            "type": "string",
+            "minLength": 1
+          },
+          "function": {
+            "type": "object",
+            "required": ["schema", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "schema": { "type": "string", "minLength": 1 },
+              "name": { "type": "string", "minLength": 1 }
+            }
+          },
+          "volatility": {
+            "description": "The function's declared volatility, recorded because volatility does not exclude: every call is rolled back, and a volatile one is checked for writes.",
+            "enum": ["immutable", "stable", "volatile"]
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "type", "bind", "basis"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "type": { "type": "string", "minLength": 1 },
+                "bind": {
+                  "description": "`handles`: each named handle in turn, and, with `partner`, the partner parameter takes the matching `partner_values` entry. `values`: each literal in turn. `partner_of`: set by its polymorphic id parameter. `default`: left to the parameter's default.",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": ["handles"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "handles": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": { "$ref": "#/$defs/id" }
+                        },
+                        "partner": { "type": "string" },
+                        "partner_values": {
+                          "type": "object",
+                          "additionalProperties": { "$ref": "#/$defs/value" }
+                        }
+                      },
+                      "dependentRequired": { "partner": ["partner_values"] }
+                    },
+                    {
+                      "type": "object",
+                      "required": ["values"],
+                      "additionalProperties": false,
+                      "properties": {
+                        "values": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": { "$ref": "#/$defs/value" }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": ["partner_of"],
+                      "additionalProperties": false,
+                      "properties": { "partner_of": { "const": true } }
+                    },
+                    {
+                      "type": "object",
+                      "required": ["default"],
+                      "additionalProperties": false,
+                      "properties": { "default": { "const": true } }
+                    }
+                  ]
+                },
+                "basis": {
+                  "description": "Where each bound value came from. A value supplied by hand says so, with its reason.",
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "parse_errors": {
+            "description": "Body expressions that could not be parsed, so argument derivation may be incomplete for them.",
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "excluded": {
+      "description": "Every element left out, with its reason. A reason is structure, tractability, environment or scope, never that the element is not meant to happen.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["element", "basis", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "element": { "type": "string", "minLength": 1 },
+          "basis": { "enum": ["structure", "tractability", "environment", "scope"] },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" },
+    "value": { "type": ["string", "boolean", "number", "null"] },
+    "sha256": {
+      "description": "A lowercase hex SHA-256 of a document's canonical JSON form: keys sorted, separators ',' and ':', UTF-8, no ASCII escaping.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

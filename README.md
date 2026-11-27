@@ -44,12 +44,22 @@ Early. What exists:
     cross between them, and where the algorithms disagree.
   - The **area of concern**: the part of the system under analysis, and every edge that crosses
     its boundary.
+  - The **abstraction**: the axes a probe enumerates in full, the fixture handles a builder
+    supplies, and the predicates called, with every argument's source and every exclusion's
+    reason.
 - [`src/topos/`](src/topos/): the first components.
   - `topos.extract.postgres` reads a PostgreSQL database's applied schema into a structural
     topology.
   - `topos.cluster` clusters a topology.
   - `topos.area` derives an area of concern from a clustering, and verifies one against its
     inputs.
+  - `topos.probe` observes a target by executing it. `topos.probe.abstraction` derives the
+    predicates and their argument values from an area and the schema: keys, check constraints,
+    enums, and the literals function bodies compare each parameter with. `topos.probe.engine`
+    calls every predicate over the full cartesian product of the axes and emits the access
+    relation, keeping errors and NULLs as `indeterminate` and unconstructible cases as
+    `not_constructed`. `topos.probe.postgres` runs it against PostgreSQL with a fixture-builder
+    callback, rolling back every combination and every call.
 - [`examples/`](examples/): a small synthetic system written in those schemas.
 
 ## Crossing-edge classes

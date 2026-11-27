@@ -23,6 +23,7 @@ SCHEMAS = {
     "topology.json": "structural-topology.schema.json",
     "area.json": "area-of-concern.schema.json",
     "clustering.json": "clustering.schema.json",
+    "abstraction.json": "abstraction.schema.json",
 }
 
 
@@ -262,6 +263,48 @@ def check_area(area: dict, documents: dict[str, dict], where: str, errors: list[
             errors.append(f"{where}: area boundary {edge_id}: inside and outside are wrong")
 
 
+def check_abstraction(
+    abstraction: dict, area: dict | None, topology: dict | None, where: str, errors: list[str]
+) -> None:
+    """Every predicate is an area member and a topology function, and every binding resolves."""
+    label = f"{where}: abstraction"
+    named = abstraction.get("area_of_concern")
+    if named and (area is None or named["sha256"] != canonical_sha256(area)):
+        errors.append(f"{label}: its area-of-concern hash does not match area.json")
+    handles = {handle["id"] for handle in abstraction["handles"]}
+    if abstraction["actor_handle"] not in handles:
+        errors.append(f"{label}: the actor handle {abstraction['actor_handle']} is not a handle")
+    axes = [axis["id"] for axis in abstraction["axes"]]
+    if len(axes) != len(set(axes)):
+        errors.append(f"{label}: axis ids repeat")
+    members = set(area["members"]) if area else set()
+    functions = (
+        {n["id"] for n in topology["nodes"] if n["kind"] == "function"} if topology else set()
+    )
+    for predicate in abstraction["predicates"]:
+        pid = predicate["id"]
+        if area is not None and pid not in members:
+            errors.append(f"{label}: predicate {pid} is not an area member")
+        if topology is not None and pid not in functions:
+            errors.append(f"{label}: predicate {pid} is not a topology function")
+        names = {parameter["name"] for parameter in predicate["parameters"]}
+        partners = set()
+        for parameter in predicate["parameters"]:
+            bind = parameter["bind"]
+            for handle in bind.get("handles", []):
+                if handle not in handles:
+                    errors.append(f"{label}: {pid} binds unknown handle {handle}")
+            if "partner" in bind:
+                partners.add(bind["partner"])
+                if bind["partner"] not in names:
+                    errors.append(f"{label}: {pid} names unknown partner {bind['partner']}")
+                if set(bind["partner_values"]) != set(bind["handles"]):
+                    errors.append(f"{label}: {pid} partner values do not cover its handles")
+        for parameter in predicate["parameters"]:
+            if parameter["bind"].get("partner_of") and parameter["name"] not in partners:
+                errors.append(f"{label}: {pid} {parameter['name']} is nobody's partner")
+
+
 def check_crossings(findings: dict, area: dict, where: str, errors: list[str]) -> None:
     examined = findings["examined"]
     if examined.get("area_of_concern") != area["name"]:
@@ -296,8 +339,16 @@ def main() -> int:
             check_clustering(
                 documents["clustering"], documents["structural-topology"], where, errors
             )
-        if (example / "area.json").exists():
-            area = load(example / "area.json")
+        area = load(example / "area.json") if (example / "area.json").exists() else None
+        if (example / "abstraction.json").exists():
+            check_abstraction(
+                load(example / "abstraction.json"),
+                area,
+                documents.get("structural-topology"),
+                where,
+                errors,
+            )
+        if area is not None:
             if "structural-topology" not in documents:
                 errors.append(f"{where}: an area needs the topology it was derived from")
             else:
