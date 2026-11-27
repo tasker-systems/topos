@@ -1,5 +1,5 @@
-# Dependency updates for this repository (SC-IN-2). Its one ecosystem so far is GitHub Actions:
-# the SHA pins in .github/workflows/ (SC-GHA-1).
+# Dependency updates for this repository (SC-IN-2): GitHub Actions (the SHA pins in
+# .github/workflows/, SC-GHA-1) and the Python test pins in requirements-test.txt.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -11,4 +11,13 @@ updates:
       default-days: 7
     groups:
       actions:
+        patterns: ["*"]
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python:
         patterns: ["*"]

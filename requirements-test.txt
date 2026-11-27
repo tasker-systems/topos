@@ -1,0 +1,7 @@
+# The exact versions CI tests with. pyproject.toml states the ranges topos supports; this file pins
+# one point inside them so a CI run is reproducible, and Dependabot proposes each update.
+pglast==8.9
+psycopg==3.3.9
+psycopg-binary==3.3.9
+pytest==9.1.1
+jsonschema==4.26.0

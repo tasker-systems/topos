@@ -71,10 +71,40 @@ jobs:
       - name: Format
         run: ruff format --check --no-cache .
 
+  # The Python tests, including the extractor's, against a real PostgreSQL holding synthetic
+  # schemas only. TOPOS_REQUIRE_DATABASE makes a missing server fail rather than skip.
+  python-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16.15-bookworm@sha256:5264710be20f409750ac6dc4e5706dcef929c87e241605463f0f9aefa932a8d9
+        env:
+          POSTGRES_PASSWORD: topos-ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s
+          --health-retries 20
+    env:
+      TOPOS_TEST_DSN: postgresql://postgres:topos-ci@localhost:5432/postgres
+      TOPOS_REQUIRE_DATABASE: "1"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install
+        run: python3 -m pip install --user -r requirements-test.txt && python3 -m pip install --user --no-deps -e .
+
+      - name: Test
+        run: python3 -m pytest
+
   ci-success:
     name: CI Success
     if: always()
-    needs: [conventions, examples, python-lint]
+    needs: [conventions, examples, python-lint, python-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -83,3 +113,4 @@ jobs:
           test "${{ needs.conventions.result }}" = success
           test "${{ needs.examples.result }}" = success
           test "${{ needs.python-lint.result }}" = success
+          test "${{ needs.python-tests.result }}" = success
