@@ -66,13 +66,29 @@ def _graph(topology: dict[str, Any], kinds: set[str] | None = None) -> nx.Graph:
     return graph
 
 
+def _on_integers(graph: nx.Graph) -> tuple[nx.Graph, list[str]]:
+    """The graph relabelled 0..n-1 in sorted-name order, and the names by label.
+
+    Community algorithms iterate over sets of nodes. Over strings that order changes with each
+    process's hash seed, so they run over integers, whose order does not.
+    """
+    names = sorted(graph.nodes)
+    index = {name: i for i, name in enumerate(names)}
+    relabelled = nx.Graph()
+    relabelled.add_nodes_from(range(len(names)))
+    for a, b, data in sorted(
+        graph.edges(data=True), key=lambda item: (index[item[0]], index[item[1]])
+    ):
+        relabelled.add_edge(*sorted((index[a], index[b])), weight=data["weight"])
+    return relabelled, names
+
+
 def _louvain(graph: nx.Graph, resolution: float) -> list[set[str]]:
-    return [
-        set(part)
-        for part in louvain_communities(
-            graph, weight="weight", resolution=resolution, seed=PARAMETERS["seed"]
-        )
-    ]
+    relabelled, names = _on_integers(graph)
+    parts = louvain_communities(
+        relabelled, weight="weight", resolution=resolution, seed=PARAMETERS["seed"]
+    )
+    return [{names[i] for i in part} for part in parts]
 
 
 def _layered(topology: dict[str, Any], graph: nx.Graph) -> list[set[str]]:
@@ -118,9 +134,9 @@ def _layered(topology: dict[str, Any], graph: nx.Graph) -> list[set[str]]:
 
 
 def _label_propagation(graph: nx.Graph) -> list[set[str]]:
-    return [
-        set(part) for part in asyn_lpa_communities(graph, weight="weight", seed=PARAMETERS["seed"])
-    ]
+    relabelled, names = _on_integers(graph)
+    parts = asyn_lpa_communities(relabelled, weight="weight", seed=PARAMETERS["seed"])
+    return [{names[i] for i in part} for part in parts]
 
 
 def _adjusted_rand(a: dict[str, str], b: dict[str, str]) -> float:

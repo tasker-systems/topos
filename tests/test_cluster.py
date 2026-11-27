@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 import jsonschema
-from synthetic import two_neighbourhoods
+from synthetic import scattered, two_neighbourhoods
 
 from topos.cluster import PARAMETERS, cluster_topology
 
@@ -76,3 +76,22 @@ def test_the_example_clustering_is_what_the_clusterer_produces() -> None:
     committed = json.loads((EXAMPLE / "clustering.json").read_text())
     ref = committed["inputs"][0]["ref"]
     assert cluster_topology(topology, topology_ref=ref) == committed
+
+
+def test_the_result_does_not_depend_on_the_process_hash_seed(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+
+    source = tmp_path / "topology.json"
+    source.write_text(json.dumps(scattered()))
+    outputs = []
+    for seed in ("1", "2", "3"):
+        out = tmp_path / f"clustering-{seed}.json"
+        env = {"PYTHONHASHSEED": seed, "PYTHONPATH": str(ROOT / "src")}
+        subprocess.run(
+            [sys.executable, "-m", "topos.cluster", str(source), "--out", str(out)],
+            check=True,
+            env=env,
+        )
+        outputs.append(out.read_text())
+    assert outputs[0] == outputs[1] == outputs[2]
