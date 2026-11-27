@@ -8,19 +8,25 @@
       "role": "structural-topology",
       "ref": "examples/lending-library/topology.json",
       "sha256": "a6640174124923623a4a0f5b83b7c1a0f6ff14e864a7aded638ee5e4da199ed3"
+    },
+    {
+      "role": "clustering",
+      "ref": "examples/lending-library/clustering.json",
+      "sha256": "8a31b3eaef880342902d73d31abf825a29d48d7a77fd0bfb927b2850303a155c"
     }
   ],
   "derivation": {
-    "method": "declared",
-    "by": "example-owner",
-    "rule": "the tables a book's circulation status lives in, and everything that reads, writes, guards or is attached to them"
+    "method": "clustering",
+    "algorithm": "layered",
+    "clusters": ["layered/c000"],
+    "rule": "the cluster that holds the tables a book's circulation status lives in"
   },
   "members": [
     "function:public.can_return(uuid,uuid)",
+    "function:public.is_librarian(uuid)",
     "function:public.lend(uuid,uuid,uuid)",
     "function:public.mark_lost(uuid,uuid)",
     "function:public.return_book(uuid,uuid)",
-    "function:public.touch_book()",
     "policy:public.loans.loans_visible",
     "table:public.books",
     "table:public.loans",
@@ -28,43 +34,36 @@
     "type:public.book_status",
     "view:public.books_on_loan"
   ],
-  "hand_edits": [],
+  "hand_edits": [
+    {
+      "op": "remove",
+      "element": "table:public.members",
+      "by": "example-owner",
+      "reason": "its rows are read here but written only by code outside the schema; it is kept as a boundary rather than analysed"
+    }
+  ],
   "exclusions": [],
   "boundary": [
     {
-      "edge": "calls:function:public.can_return(uuid,uuid)->function:public.is_librarian(uuid)",
-      "inside": "function:public.can_return(uuid,uuid)",
-      "outside": "function:public.is_librarian(uuid)",
+      "edge": "executes:trigger:public.books.books_audit->function:public.touch_book()",
+      "inside": "trigger:public.books.books_audit",
+      "outside": "function:public.touch_book()",
       "class": "state-carrying",
-      "basis": "the callee is stable: its answer depends on rows it reads on the other side"
-    },
-    {
-      "edge": "calls:function:public.lend(uuid,uuid,uuid)->function:public.is_librarian(uuid)",
-      "inside": "function:public.lend(uuid,uuid,uuid)",
-      "outside": "function:public.is_librarian(uuid)",
-      "class": "state-carrying",
-      "basis": "the callee is stable: its answer depends on rows it reads on the other side"
-    },
-    {
-      "edge": "calls:policy:public.loans.loans_visible->function:public.is_librarian(uuid)",
-      "inside": "policy:public.loans.loans_visible",
-      "outside": "function:public.is_librarian(uuid)",
-      "class": "state-carrying",
-      "basis": "the callee is stable: its answer depends on rows it reads on the other side"
+      "basis": "a trigger fires on a write and passes the row to its function"
     },
     {
       "edge": "foreign_key:table:public.loans->table:public.members",
       "inside": "table:public.loans",
       "outside": "table:public.members",
       "class": "reference-only",
-      "basis": "a key names the other table's rows without carrying its state across"
+      "basis": "a foreign key names the other side without reading its state"
     },
     {
-      "edge": "writes:function:public.touch_book()->table:public.audit_log",
-      "inside": "function:public.touch_book()",
-      "outside": "table:public.audit_log",
+      "edge": "reads:function:public.is_librarian(uuid)->table:public.members",
+      "inside": "function:public.is_librarian(uuid)",
+      "outside": "table:public.members",
       "class": "state-carrying",
-      "basis": "a write into a table on the other side"
+      "basis": "the table has no extracted writer, so it is written outside the schema"
     }
   ]
 }

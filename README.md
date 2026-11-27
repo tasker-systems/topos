@@ -40,9 +40,33 @@ Early. What exists:
   - The **declared intent**, and the **findings report** that compares a model with it. Every
     observed interaction is reported as intended, contrary to intent, or unqualified.
   - The **structural topology**: the whole-system dependency graph that clustering reads.
+  - The **clustering**: clusters proposed from a topology by several algorithms, the edges that
+    cross between them, and where the algorithms disagree.
   - The **area of concern**: the part of the system under analysis, and every edge that crosses
     its boundary.
+- [`src/topos/`](src/topos/): the first components.
+  - `topos.extract.postgres` reads a PostgreSQL database's applied schema into a structural
+    topology.
+  - `topos.cluster` clusters a topology.
+  - `topos.area` derives an area of concern from a clustering, and verifies one against its
+    inputs.
 - [`examples/`](examples/): a small synthetic system written in those schemas.
+
+## Crossing-edge classes
+
+An area of concern lists every edge of the structural topology with exactly one end inside it.
+Clustering lists the edges between its clusters the same way. Each such edge is classed from the
+topology alone, by `topos.boundary`:
+
+| Edge | Class |
+|---|---|
+| `writes` | state-carrying: a write into the other side |
+| `reads` of a table | state-carrying if the table is written on its own side, or has no extracted writer (it is then written outside the extracted schema); reference-only if every extracted writer is on the reader's side |
+| `reads` of a view | state-carrying: a view exposes the state of what it reads |
+| `calls` | state-carrying unless the callee is immutable, whose answer depends only on its arguments |
+| `trigger_on`, `executes` | state-carrying: a trigger fires on a write and passes the row on |
+| `policy_on` | state-carrying: a policy guards the rows of its table |
+| `foreign_key`, `typed_by` | reference-only: a key or a type names the other side without reading its state |
 
 ## Scope
 

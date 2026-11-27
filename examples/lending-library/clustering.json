@@ -1,0 +1,925 @@
+{
+  "schema_version": "0.2",
+  "target": { "name": "lending-library", "revision": "synthetic-1", "kind": "software" },
+  "clusterer": {
+    "name": "topos.cluster",
+    "version": "0.2.0",
+    "parameters": {
+      "weights": {
+        "foreign_key": 1.0,
+        "reads": 1.0,
+        "writes": 2.0,
+        "calls": 1.0,
+        "trigger_on": 3.0,
+        "executes": 3.0,
+        "policy_on": 3.0,
+        "typed_by": 0.5
+      },
+      "seed": 0,
+      "louvain_resolutions": [0.5, 1.0, 2.0],
+      "layered_table_resolution": 1.0
+    }
+  },
+  "inputs": [
+    {
+      "role": "structural-topology",
+      "ref": "examples/lending-library/topology.json",
+      "sha256": "a6640174124923623a4a0f5b83b7c1a0f6ff14e864a7aded638ee5e4da199ed3"
+    }
+  ],
+  "graph": { "nodes": 14, "edges": 21, "joined_pairs": 21 },
+  "algorithms": [
+    {
+      "id": "layered",
+      "method": "layered",
+      "parameters": {
+        "tables_by": "foreign_key",
+        "table_method": "louvain",
+        "resolution": 1.0,
+        "seed": 0,
+        "attach_by": "strongest weighted join",
+        "weights": {
+          "foreign_key": 1.0,
+          "reads": 1.0,
+          "writes": 2.0,
+          "calls": 1.0,
+          "trigger_on": 3.0,
+          "executes": 3.0,
+          "policy_on": 3.0,
+          "typed_by": 0.5
+        }
+      },
+      "modularity": 0.099882,
+      "clusters": [
+        {
+          "id": "layered/c000",
+          "size": 12,
+          "anchor": "table:public.books",
+          "kinds": { "function": 5, "policy": 1, "table": 3, "trigger": 1, "type": 1, "view": 1 },
+          "internal_edges": 19,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.can_return(uuid,uuid)",
+            "function:public.is_librarian(uuid)",
+            "function:public.lend(uuid,uuid,uuid)",
+            "function:public.mark_lost(uuid,uuid)",
+            "function:public.return_book(uuid,uuid)",
+            "policy:public.loans.loans_visible",
+            "table:public.books",
+            "table:public.loans",
+            "table:public.members",
+            "trigger:public.books.books_audit",
+            "type:public.book_status",
+            "view:public.books_on_loan"
+          ]
+        },
+        {
+          "id": "layered/c001",
+          "size": 2,
+          "anchor": "function:public.touch_book()",
+          "kinds": { "function": 1, "table": 1 },
+          "internal_edges": 1,
+          "crossing_edges": 1,
+          "members": ["function:public.touch_book()", "table:public.audit_log"]
+        }
+      ],
+      "crossings": [
+        {
+          "edge": "executes:trigger:public.books.books_audit->function:public.touch_book()",
+          "from_cluster": "layered/c000",
+          "to_cluster": "layered/c001",
+          "class": "state-carrying",
+          "basis": "a trigger fires on a write and passes the row to its function"
+        }
+      ],
+      "crossing_counts": { "state-carrying": 1, "reference-only": 0 },
+      "attachments": [
+        {
+          "node": "function:public.can_return(uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 4.0 }
+        },
+        {
+          "node": "function:public.is_librarian(uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 4.0 }
+        },
+        {
+          "node": "function:public.lend(uuid,uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 5.0 }
+        },
+        {
+          "node": "function:public.mark_lost(uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 3.0 }
+        },
+        {
+          "node": "function:public.return_book(uuid,uuid)",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 5.0 }
+        },
+        {
+          "node": "function:public.touch_book()",
+          "pass": 1,
+          "cluster": "layered/c001",
+          "touches": { "layered/c000": 3.0, "layered/c001": 2.0 }
+        },
+        {
+          "node": "policy:public.loans.loans_visible",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 4.0 }
+        },
+        {
+          "node": "trigger:public.books.books_audit",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 3.0, "layered/c001": 3.0 }
+        },
+        {
+          "node": "type:public.book_status",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 0.5 }
+        },
+        {
+          "node": "view:public.books_on_loan",
+          "pass": 1,
+          "cluster": "layered/c000",
+          "touches": { "layered/c000": 2.0 }
+        }
+      ]
+    },
+    {
+      "id": "louvain-r0.5",
+      "method": "louvain",
+      "parameters": {
+        "resolution": 0.5,
+        "seed": 0,
+        "weights": {
+          "foreign_key": 1.0,
+          "reads": 1.0,
+          "writes": 2.0,
+          "calls": 1.0,
+          "trigger_on": 3.0,
+          "executes": 3.0,
+          "policy_on": 3.0,
+          "typed_by": 0.5
+        }
+      },
+      "modularity": 0.227692,
+      "clusters": [
+        {
+          "id": "louvain-r0.5/c000",
+          "size": 11,
+          "anchor": "table:public.loans",
+          "kinds": { "function": 5, "policy": 1, "table": 3, "type": 1, "view": 1 },
+          "internal_edges": 18,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.can_return(uuid,uuid)",
+            "function:public.is_librarian(uuid)",
+            "function:public.lend(uuid,uuid,uuid)",
+            "function:public.mark_lost(uuid,uuid)",
+            "function:public.return_book(uuid,uuid)",
+            "policy:public.loans.loans_visible",
+            "table:public.books",
+            "table:public.loans",
+            "table:public.members",
+            "type:public.book_status",
+            "view:public.books_on_loan"
+          ]
+        },
+        {
+          "id": "louvain-r0.5/c001",
+          "size": 3,
+          "anchor": "function:public.touch_book()",
+          "kinds": { "function": 1, "table": 1, "trigger": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.touch_book()",
+            "table:public.audit_log",
+            "trigger:public.books.books_audit"
+          ]
+        }
+      ],
+      "crossings": [
+        {
+          "edge": "trigger_on:trigger:public.books.books_audit->table:public.books",
+          "from_cluster": "louvain-r0.5/c001",
+          "to_cluster": "louvain-r0.5/c000",
+          "class": "state-carrying",
+          "basis": "a trigger fires on a write and passes the row to its function"
+        }
+      ],
+      "crossing_counts": { "state-carrying": 1, "reference-only": 0 }
+    },
+    {
+      "id": "louvain-r1.0",
+      "method": "louvain",
+      "parameters": {
+        "resolution": 1.0,
+        "seed": 0,
+        "weights": {
+          "foreign_key": 1.0,
+          "reads": 1.0,
+          "writes": 2.0,
+          "calls": 1.0,
+          "trigger_on": 3.0,
+          "executes": 3.0,
+          "policy_on": 3.0,
+          "typed_by": 0.5
+        }
+      },
+      "modularity": 0.293964,
+      "clusters": [
+        {
+          "id": "louvain-r1.0/c000",
+          "size": 6,
+          "anchor": "table:public.loans",
+          "kinds": { "function": 3, "policy": 1, "table": 2 },
+          "internal_edges": 8,
+          "crossing_edges": 6,
+          "members": [
+            "function:public.can_return(uuid,uuid)",
+            "function:public.is_librarian(uuid)",
+            "function:public.return_book(uuid,uuid)",
+            "policy:public.loans.loans_visible",
+            "table:public.loans",
+            "table:public.members"
+          ]
+        },
+        {
+          "id": "louvain-r1.0/c001",
+          "size": 5,
+          "anchor": "table:public.books",
+          "kinds": { "function": 2, "table": 1, "type": 1, "view": 1 },
+          "internal_edges": 4,
+          "crossing_edges": 7,
+          "members": [
+            "function:public.lend(uuid,uuid,uuid)",
+            "function:public.mark_lost(uuid,uuid)",
+            "table:public.books",
+            "type:public.book_status",
+            "view:public.books_on_loan"
+          ]
+        },
+        {
+          "id": "louvain-r1.0/c002",
+          "size": 3,
+          "anchor": "function:public.touch_book()",
+          "kinds": { "function": 1, "table": 1, "trigger": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.touch_book()",
+            "table:public.audit_log",
+            "trigger:public.books.books_audit"
+          ]
+        }
+      ],
+      "crossings": [
+        {
+          "edge": "calls:function:public.lend(uuid,uuid,uuid)->function:public.is_librarian(uuid)",
+          "from_cluster": "louvain-r1.0/c001",
+          "to_cluster": "louvain-r1.0/c000",
+          "class": "state-carrying",
+          "basis": "the callee is stable: its answer can depend on state it reads"
+        },
+        {
+          "edge": "calls:function:public.mark_lost(uuid,uuid)->function:public.can_return(uuid,uuid)",
+          "from_cluster": "louvain-r1.0/c001",
+          "to_cluster": "louvain-r1.0/c000",
+          "class": "state-carrying",
+          "basis": "the callee is stable: its answer can depend on state it reads"
+        },
+        {
+          "edge": "foreign_key:table:public.loans->table:public.books",
+          "from_cluster": "louvain-r1.0/c000",
+          "to_cluster": "louvain-r1.0/c001",
+          "class": "reference-only",
+          "basis": "a foreign key names the other side without reading its state"
+        },
+        {
+          "edge": "reads:view:public.books_on_loan->table:public.loans",
+          "from_cluster": "louvain-r1.0/c001",
+          "to_cluster": "louvain-r1.0/c000",
+          "class": "state-carrying",
+          "basis": "the table is written on its own side and read on the other"
+        },
+        {
+          "edge": "trigger_on:trigger:public.books.books_audit->table:public.books",
+          "from_cluster": "louvain-r1.0/c002",
+          "to_cluster": "louvain-r1.0/c001",
+          "class": "state-carrying",
+          "basis": "a trigger fires on a write and passes the row to its function"
+        },
+        {
+          "edge": "writes:function:public.lend(uuid,uuid,uuid)->table:public.loans",
+          "from_cluster": "louvain-r1.0/c001",
+          "to_cluster": "louvain-r1.0/c000",
+          "class": "state-carrying",
+          "basis": "a write into a table on the other side"
+        },
+        {
+          "edge": "writes:function:public.return_book(uuid,uuid)->table:public.books",
+          "from_cluster": "louvain-r1.0/c000",
+          "to_cluster": "louvain-r1.0/c001",
+          "class": "state-carrying",
+          "basis": "a write into a table on the other side"
+        }
+      ],
+      "crossing_counts": { "state-carrying": 6, "reference-only": 1 }
+    },
+    {
+      "id": "louvain-r2.0",
+      "method": "louvain",
+      "parameters": {
+        "resolution": 2.0,
+        "seed": 0,
+        "weights": {
+          "foreign_key": 1.0,
+          "reads": 1.0,
+          "writes": 2.0,
+          "calls": 1.0,
+          "trigger_on": 3.0,
+          "executes": 3.0,
+          "policy_on": 3.0,
+          "typed_by": 0.5
+        }
+      },
+      "modularity": 0.229112,
+      "clusters": [
+        {
+          "id": "louvain-r2.0/c000",
+          "size": 3,
+          "anchor": "function:public.is_librarian(uuid)",
+          "kinds": { "function": 2, "table": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 5,
+          "members": [
+            "function:public.is_librarian(uuid)",
+            "function:public.lend(uuid,uuid,uuid)",
+            "table:public.members"
+          ]
+        },
+        {
+          "id": "louvain-r2.0/c001",
+          "size": 3,
+          "anchor": "table:public.books",
+          "kinds": { "function": 1, "table": 1, "type": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 7,
+          "members": [
+            "function:public.return_book(uuid,uuid)",
+            "table:public.books",
+            "type:public.book_status"
+          ]
+        },
+        {
+          "id": "louvain-r2.0/c002",
+          "size": 3,
+          "anchor": "function:public.touch_book()",
+          "kinds": { "function": 1, "table": 1, "trigger": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.touch_book()",
+            "table:public.audit_log",
+            "trigger:public.books.books_audit"
+          ]
+        },
+        {
+          "id": "louvain-r2.0/c003",
+          "size": 3,
+          "anchor": "table:public.loans",
+          "kinds": { "policy": 1, "table": 1, "view": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 7,
+          "members": [
+            "policy:public.loans.loans_visible",
+            "table:public.loans",
+            "view:public.books_on_loan"
+          ]
+        },
+        {
+          "id": "louvain-r2.0/c004",
+          "size": 2,
+          "anchor": "function:public.can_return(uuid,uuid)",
+          "kinds": { "function": 2 },
+          "internal_edges": 1,
+          "crossing_edges": 4,
+          "members": [
+            "function:public.can_return(uuid,uuid)",
+            "function:public.mark_lost(uuid,uuid)"
+          ]
+        }
+      ],
+      "crossings": [
+        {
+          "edge": "calls:function:public.can_return(uuid,uuid)->function:public.is_librarian(uuid)",
+          "from_cluster": "louvain-r2.0/c004",
+          "to_cluster": "louvain-r2.0/c000",
+          "class": "state-carrying",
+          "basis": "the callee is stable: its answer can depend on state it reads"
+        },
+        {
+          "edge": "calls:function:public.return_book(uuid,uuid)->function:public.can_return(uuid,uuid)",
+          "from_cluster": "louvain-r2.0/c001",
+          "to_cluster": "louvain-r2.0/c004",
+          "class": "state-carrying",
+          "basis": "the callee is stable: its answer can depend on state it reads"
+        },
+        {
+          "edge": "calls:policy:public.loans.loans_visible->function:public.is_librarian(uuid)",
+          "from_cluster": "louvain-r2.0/c003",
+          "to_cluster": "louvain-r2.0/c000",
+          "class": "state-carrying",
+          "basis": "the callee is stable: its answer can depend on state it reads"
+        },
+        {
+          "edge": "foreign_key:table:public.loans->table:public.books",
+          "from_cluster": "louvain-r2.0/c003",
+          "to_cluster": "louvain-r2.0/c001",
+          "class": "reference-only",
+          "basis": "a foreign key names the other side without reading its state"
+        },
+        {
+          "edge": "foreign_key:table:public.loans->table:public.members",
+          "from_cluster": "louvain-r2.0/c003",
+          "to_cluster": "louvain-r2.0/c000",
+          "class": "reference-only",
+          "basis": "a foreign key names the other side without reading its state"
+        },
+        {
+          "edge": "reads:function:public.can_return(uuid,uuid)->table:public.loans",
+          "from_cluster": "louvain-r2.0/c004",
+          "to_cluster": "louvain-r2.0/c003",
+          "class": "reference-only",
+          "basis": "every extracted writer of the table is on the reader's side"
+        },
+        {
+          "edge": "reads:view:public.books_on_loan->table:public.books",
+          "from_cluster": "louvain-r2.0/c003",
+          "to_cluster": "louvain-r2.0/c001",
+          "class": "state-carrying",
+          "basis": "the table is written on its own side and read on the other"
+        },
+        {
+          "edge": "trigger_on:trigger:public.books.books_audit->table:public.books",
+          "from_cluster": "louvain-r2.0/c002",
+          "to_cluster": "louvain-r2.0/c001",
+          "class": "state-carrying",
+          "basis": "a trigger fires on a write and passes the row to its function"
+        },
+        {
+          "edge": "writes:function:public.lend(uuid,uuid,uuid)->table:public.books",
+          "from_cluster": "louvain-r2.0/c000",
+          "to_cluster": "louvain-r2.0/c001",
+          "class": "state-carrying",
+          "basis": "a write into a table on the other side"
+        },
+        {
+          "edge": "writes:function:public.lend(uuid,uuid,uuid)->table:public.loans",
+          "from_cluster": "louvain-r2.0/c000",
+          "to_cluster": "louvain-r2.0/c003",
+          "class": "state-carrying",
+          "basis": "a write into a table on the other side"
+        },
+        {
+          "edge": "writes:function:public.mark_lost(uuid,uuid)->table:public.books",
+          "from_cluster": "louvain-r2.0/c004",
+          "to_cluster": "louvain-r2.0/c001",
+          "class": "state-carrying",
+          "basis": "a write into a table on the other side"
+        },
+        {
+          "edge": "writes:function:public.return_book(uuid,uuid)->table:public.loans",
+          "from_cluster": "louvain-r2.0/c001",
+          "to_cluster": "louvain-r2.0/c003",
+          "class": "state-carrying",
+          "basis": "a write into a table on the other side"
+        }
+      ],
+      "crossing_counts": { "state-carrying": 9, "reference-only": 3 }
+    },
+    {
+      "id": "label-propagation",
+      "method": "asynchronous label propagation",
+      "parameters": {
+        "seed": 0,
+        "weights": {
+          "foreign_key": 1.0,
+          "reads": 1.0,
+          "writes": 2.0,
+          "calls": 1.0,
+          "trigger_on": 3.0,
+          "executes": 3.0,
+          "policy_on": 3.0,
+          "typed_by": 0.5
+        }
+      },
+      "modularity": 0.227692,
+      "clusters": [
+        {
+          "id": "label-propagation/c000",
+          "size": 11,
+          "anchor": "table:public.loans",
+          "kinds": { "function": 5, "policy": 1, "table": 3, "type": 1, "view": 1 },
+          "internal_edges": 18,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.can_return(uuid,uuid)",
+            "function:public.is_librarian(uuid)",
+            "function:public.lend(uuid,uuid,uuid)",
+            "function:public.mark_lost(uuid,uuid)",
+            "function:public.return_book(uuid,uuid)",
+            "policy:public.loans.loans_visible",
+            "table:public.books",
+            "table:public.loans",
+            "table:public.members",
+            "type:public.book_status",
+            "view:public.books_on_loan"
+          ]
+        },
+        {
+          "id": "label-propagation/c001",
+          "size": 3,
+          "anchor": "function:public.touch_book()",
+          "kinds": { "function": 1, "table": 1, "trigger": 1 },
+          "internal_edges": 2,
+          "crossing_edges": 1,
+          "members": [
+            "function:public.touch_book()",
+            "table:public.audit_log",
+            "trigger:public.books.books_audit"
+          ]
+        }
+      ],
+      "crossings": [
+        {
+          "edge": "trigger_on:trigger:public.books.books_audit->table:public.books",
+          "from_cluster": "label-propagation/c001",
+          "to_cluster": "label-propagation/c000",
+          "class": "state-carrying",
+          "basis": "a trigger fires on a write and passes the row to its function"
+        }
+      ],
+      "crossing_counts": { "state-carrying": 1, "reference-only": 0 }
+    }
+  ],
+  "disagreement": {
+    "pairwise": [
+      { "a": "layered", "b": "louvain-r0.5", "adjusted_rand": 0.671663 },
+      { "a": "layered", "b": "louvain-r1.0", "adjusted_rand": 0.200286 },
+      { "a": "layered", "b": "louvain-r2.0", "adjusted_rand": 0.046948 },
+      { "a": "layered", "b": "label-propagation", "adjusted_rand": 0.671663 },
+      { "a": "louvain-r0.5", "b": "louvain-r1.0", "adjusted_rand": 0.40367 },
+      { "a": "louvain-r0.5", "b": "louvain-r2.0", "adjusted_rand": 0.173228 },
+      { "a": "louvain-r0.5", "b": "label-propagation", "adjusted_rand": 1.0 },
+      { "a": "louvain-r1.0", "b": "louvain-r2.0", "adjusted_rand": 0.121212 },
+      { "a": "louvain-r1.0", "b": "label-propagation", "adjusted_rand": 0.40367 },
+      { "a": "louvain-r2.0", "b": "label-propagation", "adjusted_rand": 0.173228 }
+    ],
+    "best_match": [
+      {
+        "cluster": "layered/c000",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.916667
+      },
+      {
+        "cluster": "layered/c001",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c001",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "layered/c000",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c000",
+        "jaccard": 0.5
+      },
+      {
+        "cluster": "layered/c001",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c002",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "layered/c000",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c000",
+        "jaccard": 0.25
+      },
+      {
+        "cluster": "layered/c001",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c002",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "layered/c000",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.916667
+      },
+      {
+        "cluster": "layered/c001",
+        "other": "label-propagation",
+        "best": "label-propagation/c001",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "louvain-r0.5/c000",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.916667
+      },
+      {
+        "cluster": "louvain-r0.5/c001",
+        "other": "layered",
+        "best": "layered/c001",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "louvain-r0.5/c000",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c000",
+        "jaccard": 0.545455
+      },
+      {
+        "cluster": "louvain-r0.5/c001",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c002",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r0.5/c000",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r0.5/c001",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c002",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r0.5/c000",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r0.5/c001",
+        "other": "label-propagation",
+        "best": "label-propagation/c001",
+        "jaccard": 1.0
+      },
+      { "cluster": "louvain-r1.0/c000", "other": "layered", "best": "layered/c000", "jaccard": 0.5 },
+      {
+        "cluster": "louvain-r1.0/c001",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.416667
+      },
+      {
+        "cluster": "louvain-r1.0/c002",
+        "other": "layered",
+        "best": "layered/c001",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "louvain-r1.0/c000",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.545455
+      },
+      {
+        "cluster": "louvain-r1.0/c001",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.454545
+      },
+      {
+        "cluster": "louvain-r1.0/c002",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c001",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r1.0/c000",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c000",
+        "jaccard": 0.285714
+      },
+      {
+        "cluster": "louvain-r1.0/c001",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c001",
+        "jaccard": 0.333333
+      },
+      {
+        "cluster": "louvain-r1.0/c002",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c002",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r1.0/c000",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.545455
+      },
+      {
+        "cluster": "louvain-r1.0/c001",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.454545
+      },
+      {
+        "cluster": "louvain-r1.0/c002",
+        "other": "label-propagation",
+        "best": "label-propagation/c001",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r2.0/c000",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.25
+      },
+      {
+        "cluster": "louvain-r2.0/c001",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.25
+      },
+      {
+        "cluster": "louvain-r2.0/c002",
+        "other": "layered",
+        "best": "layered/c001",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "louvain-r2.0/c003",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.25
+      },
+      {
+        "cluster": "louvain-r2.0/c004",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.166667
+      },
+      {
+        "cluster": "louvain-r2.0/c000",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r2.0/c001",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r2.0/c002",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c001",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r2.0/c003",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r2.0/c004",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 0.181818
+      },
+      {
+        "cluster": "louvain-r2.0/c000",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c000",
+        "jaccard": 0.285714
+      },
+      {
+        "cluster": "louvain-r2.0/c001",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c001",
+        "jaccard": 0.333333
+      },
+      {
+        "cluster": "louvain-r2.0/c002",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c002",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r2.0/c003",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c000",
+        "jaccard": 0.285714
+      },
+      {
+        "cluster": "louvain-r2.0/c004",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c001",
+        "jaccard": 0.166667
+      },
+      {
+        "cluster": "louvain-r2.0/c000",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r2.0/c001",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r2.0/c002",
+        "other": "label-propagation",
+        "best": "label-propagation/c001",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "louvain-r2.0/c003",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "louvain-r2.0/c004",
+        "other": "label-propagation",
+        "best": "label-propagation/c000",
+        "jaccard": 0.181818
+      },
+      {
+        "cluster": "label-propagation/c000",
+        "other": "layered",
+        "best": "layered/c000",
+        "jaccard": 0.916667
+      },
+      {
+        "cluster": "label-propagation/c001",
+        "other": "layered",
+        "best": "layered/c001",
+        "jaccard": 0.666667
+      },
+      {
+        "cluster": "label-propagation/c000",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c000",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "label-propagation/c001",
+        "other": "louvain-r0.5",
+        "best": "louvain-r0.5/c001",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "label-propagation/c000",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c000",
+        "jaccard": 0.545455
+      },
+      {
+        "cluster": "label-propagation/c001",
+        "other": "louvain-r1.0",
+        "best": "louvain-r1.0/c002",
+        "jaccard": 1.0
+      },
+      {
+        "cluster": "label-propagation/c000",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c000",
+        "jaccard": 0.272727
+      },
+      {
+        "cluster": "label-propagation/c001",
+        "other": "louvain-r2.0",
+        "best": "louvain-r2.0/c002",
+        "jaccard": 1.0
+      }
+    ]
+  }
+}

@@ -8,7 +8,7 @@
   },
   "area_of_concern": {
     "name": "circulation",
-    "sha256": "ac7aee29f7f1db78cfe487f4afb77e090e216472c75aca533da741972bf21e67"
+    "sha256": "b218e295119818594a5922a4fb38e4e81cf260c375ec3884039d96ac6fc2d618"
   },
   "roles": [
     { "id": "member", "provenance": { "kind": "extracted", "source": "src/roles.rs:3" } },

@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/clustering.schema.json",
+  "title": "Topos clustering (0.2)",
+  "description": "Clusters proposed from one structural topology by several algorithms, each with its fixed parameters; the topology edges that cross between each algorithm's clusters, classed state-carrying or reference-only; and where the algorithms disagree. Areas of concern are drawn from it. It reads only the topology, never intent.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "target",
+    "clusterer",
+    "inputs",
+    "graph",
+    "algorithms",
+    "disagreement"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.2" },
+    "target": {
+      "type": "object",
+      "required": ["name", "revision"],
+      "properties": {
+        "name": { "type": "string" },
+        "revision": { "type": "string" },
+        "kind": { "type": "string" }
+      }
+    },
+    "clusterer": {
+      "description": "What produced the document, with the whole of its configuration.",
+      "type": "object",
+      "required": ["name", "version", "parameters"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "parameters": { "type": "object" }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["role", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "role": { "const": "structural-topology" },
+          "ref": { "type": "string" },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "required": ["nodes", "edges", "joined_pairs"],
+      "additionalProperties": false,
+      "properties": {
+        "nodes": { "type": "integer" },
+        "edges": { "description": "Topology edges.", "type": "integer" },
+        "joined_pairs": {
+          "description": "Distinct node pairs joined by at least one edge, after self-loops are dropped.",
+          "type": "integer"
+        }
+      }
+    },
+    "algorithms": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "method",
+          "parameters",
+          "modularity",
+          "clusters",
+          "crossings",
+          "crossing_counts"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "method": { "type": "string" },
+          "parameters": { "type": "object" },
+          "modularity": {
+            "description": "Weighted modularity of the partition over the whole graph.",
+            "type": "number"
+          },
+          "clusters": {
+            "description": "A partition of the topology's nodes.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "size",
+                "anchor",
+                "kinds",
+                "internal_edges",
+                "crossing_edges",
+                "members"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "size": { "type": "integer", "minimum": 1 },
+                "anchor": {
+                  "description": "The member most strongly joined inside the cluster, as a label for readers. It carries no meaning beyond that.",
+                  "type": "string"
+                },
+                "kinds": {
+                  "description": "How many members of each node kind.",
+                  "type": "object",
+                  "additionalProperties": { "type": "integer" }
+                },
+                "internal_edges": { "type": "integer", "minimum": 0 },
+                "crossing_edges": { "type": "integer", "minimum": 0 },
+                "members": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "string" },
+                  "uniqueItems": true
+                }
+              }
+            }
+          },
+          "crossings": {
+            "description": "Every topology edge whose ends are in different clusters.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["edge", "from_cluster", "to_cluster", "class", "basis"],
+              "additionalProperties": false,
+              "properties": {
+                "edge": { "type": "string" },
+                "from_cluster": { "type": "string" },
+                "to_cluster": { "type": "string" },
+                "class": { "enum": ["state-carrying", "reference-only"] },
+                "basis": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "crossing_counts": {
+            "type": "object",
+            "required": ["state-carrying", "reference-only"],
+            "additionalProperties": false,
+            "properties": {
+              "state-carrying": { "type": "integer" },
+              "reference-only": { "type": "integer" }
+            }
+          },
+          "attachments": {
+            "description": "Layered method only: for every non-table node, the pass it was attached in (0 for tables, -1 for a node placed with its own connected component), the cluster it joined, and the total edge weight it has to each cluster. Every touch outside its own cluster is an edge in `crossings`.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["node", "pass", "cluster", "touches"],
+              "additionalProperties": false,
+              "properties": {
+                "node": { "type": "string" },
+                "pass": { "type": "integer", "minimum": -1 },
+                "cluster": { "type": "string" },
+                "touches": { "type": "object", "additionalProperties": { "type": "number" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "disagreement": {
+      "type": "object",
+      "required": ["pairwise", "best_match"],
+      "additionalProperties": false,
+      "properties": {
+        "pairwise": {
+          "description": "The adjusted Rand index between each pair of partitions: 1 when identical, near 0 when no more alike than chance.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["a", "b", "adjusted_rand"],
+            "additionalProperties": false,
+            "properties": {
+              "a": { "type": "string" },
+              "b": { "type": "string" },
+              "adjusted_rand": { "type": "number" }
+            }
+          }
+        },
+        "best_match": {
+          "description": "For each cluster of each algorithm, the cluster of each other algorithm it overlaps most, by Jaccard index.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["cluster", "other", "best", "jaccard"],
+            "additionalProperties": false,
+            "properties": {
+              "cluster": { "type": "string" },
+              "other": { "type": "string" },
+              "best": { "type": "string" },
+              "jaccard": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "description": "A lowercase hex SHA-256 of a document's canonical JSON form: keys sorted, separators ',' and ':', UTF-8, no ASCII escaping.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}
