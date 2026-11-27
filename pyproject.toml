@@ -12,10 +12,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=9.1,<10", "jsonschema>=4.26,<5"]
+test = ["pytest>=9.2.0,<10", "jsonschema>=4.26,<5"]
 
 [build-system]
-requires = ["setuptools>=80"]
+requires = ["setuptools>=84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]

@@ -4,5 +4,5 @@ pglast==8.9
 networkx==3.7
 psycopg==3.3.9
 psycopg-binary==3.3.9
-pytest==9.1.1
+pytest==9.2.0
 jsonschema==4.26.0
