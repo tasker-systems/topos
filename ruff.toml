@@ -1,0 +1,4 @@
+# Every .py file in the repository is linted and formatted from here (PY-LINT-1): the tasker-systems
+# canonical configuration, adopted in `extends` mode (.conventions/consumer.toml), so
+# `conventions.py check` fails if this file overrides one of its keys.
+extend = ".conventions/baseline/python/ruff.toml"

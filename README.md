@@ -1,2 +1,54 @@
 # topos
-System Topologies
+
+Topos describes a system as one model: its entities and their states, the transitions between
+states, what each transition reads and writes, and who is allowed to do what. It then checks what
+that model **allows** against what its owner **intended**.
+
+The guiding position is that effect and side effect, feature and bug, have the same structure. A
+path through a system is only a path. What makes one path a feature and another a bug is the
+intent it is measured against. So topos takes intent as an explicit input, and reports two
+differences:
+
+- **reachable but not intended:** a risk, or a valuable path that nobody named;
+- **intended but not reachable:** a bug, or a gap in the model.
+
+Each finding carries a concrete path through the model that reproduces it.
+
+## One model, many readings
+
+The same model answers different questions depending on how it is read:
+
+| Reading | Question |
+|---|---|
+| Reachability (Boolean closure) | Can this ever happen? |
+| Cheapest path (min-plus closure) | What is the cheapest way to make it happen? |
+| Absorbing Markov chain | Of runs that start here, how many end well, and how long do they take? |
+| Recurrent classes | Where can a run get stuck going round? |
+| Coupling residual | Where does changing one thing quietly change another? |
+| Homology (H₀, H₁) | Which parts never interact, and where are the independent loops? |
+
+Reachability comes first. The other readings are added only when they produce findings.
+
+## Status
+
+Early. There is no extractor or reading yet. What exists:
+
+- [`schema/`](schema/): **draft** JSON Schemas for the three documents topos exchanges. These are a
+  system model, a declared intent and a findings report. They are a proposal, not a settled
+  format.
+- [`examples/`](examples/): a small synthetic system written in those schemas.
+
+## Scope
+
+Software comes first, and other rule systems later. Targets are systems owned by tasker-systems.
+Analyses of real targets, and any statement of a defect in one, are kept out of this repository.
+The tests and examples here use synthetic systems only.
+
+## Conventions
+
+This repository consumes the [tasker-systems conventions](https://github.com/tasker-systems/conventions)
+baseline, pinned in [`.conventions/consumer.toml`](.conventions/consumer.toml).
+
+## License
+
+See [LICENSE](LICENSE).

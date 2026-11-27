@@ -1,0 +1,16 @@
+# This repository's pin on the tasker-systems conventions baseline. Doctrine: CONS-* in
+# .conventions/baseline/doctrine/consuming.md. `revision` is written by `conventions.py bump`.
+name = "topos"
+revision = "f2bc55b17e63e7dd3a94dc5c4ac7657d43d495bf"
+
+# Each adopted canonical file: where it lives here, and how it is compared (exact, extends,
+# table, superset). There is no Rust code yet, so no Rust config is adopted.
+[[adopted]]
+canonical = "python/ruff.toml"
+path = "ruff.toml"
+mode = "extends"
+
+[guidance]
+# Agent entry files that must link the projected skill, and where the skill is projected.
+entry = ["CLAUDE.md", "AGENTS.md"]
+skill = ".claude/skills/tasker-systems-conventions"

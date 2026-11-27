@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/intent.schema.json",
+  "title": "Topos declared intent (draft 0.1)",
+  "description": "What a system's owner means it to allow. A model on its own says only what is reachable. Paired with an intent, the difference between what is reachable and what is intended becomes findings. Intent is always an input: topos never infers it and presents the result as fact.",
+  "type": "object",
+  "required": ["schema_version", "target", "owner", "personas", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "target": {
+      "description": "The system this intent is for. The revision is optional: an intent usually holds across revisions.",
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string" }
+      }
+    },
+    "owner": { "type": "string", "minLength": 1 },
+    "personas": {
+      "description": "A persona is a starting point: the roles someone holds and what they are there to do.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "roles"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string" },
+          "roles": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+        }
+      }
+    },
+    "rules": {
+      "description": "Statements of what may or may not happen, each with its source. Every rule names who it applies to and what it permits or forbids.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "polarity", "applies_to", "source"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "statement": { "type": "string", "minLength": 1 },
+          "polarity": { "description": "`may`: intended to be reachable. `never`: intended to be unreachable.", "enum": ["may", "never"] },
+          "applies_to": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "personas": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "roles": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+            }
+          },
+          "concerns": {
+            "description": "The model elements the rule speaks about.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "transitions": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "capabilities": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "states": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+            }
+          },
+          "source": { "description": "Where the rule is stated: a document, a doc comment, a spec, or the owner's own declaration.", "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "jobs": {
+      "description": "Named paths the owner means a persona to be able to complete, written as Given/When/Then.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "persona", "given", "when", "then"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "persona": { "$ref": "#/$defs/id" },
+          "given": { "type": "string" },
+          "when": { "type": "string" },
+          "then": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tasker-systems/topos/schema/findings.schema.json",
+  "title": "Topos findings report (draft 0.1)",
+  "description": "The difference between what a model allows and what an intent declares. Each finding carries the persona it concerns, the rule it departs from, and a witness path that reproduces it, so a plain-language account can be written from the finding alone. A run with no intent produces no findings. It reports reachability only, and says that no intent was declared.",
+  "type": "object",
+  "required": ["schema_version", "target", "abstraction", "intent", "examined", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "target": {
+      "type": "object",
+      "required": ["name", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "revision": { "type": "string" }
+      }
+    },
+    "abstraction": { "description": "The abstraction statement of the model these findings come from.", "type": "string" },
+    "intent": {
+      "description": "The intent document compared against, or null if none was declared.",
+      "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }]
+    },
+    "examined": {
+      "description": "What was examined, so that an empty findings list is never read as 'safe'.",
+      "type": "object",
+      "required": ["readings", "personas"],
+      "additionalProperties": false,
+      "properties": {
+        "readings": { "type": "array", "items": { "type": "string" } },
+        "personas": { "type": "array", "items": { "type": "string" } },
+        "not_examined": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "persona", "rule", "witness", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "kind": {
+            "description": "`reachable-not-intended`: the model allows what a `never` rule forbids. `intended-not-reachable`: the model cannot do what a `may` rule or job expects.",
+            "enum": ["reachable-not-intended", "intended-not-reachable"]
+          },
+          "persona": { "type": "string" },
+          "rule": { "description": "The intent rule or job this finding departs from.", "type": "string" },
+          "witness": {
+            "description": "A sequence of transitions, starting from an initial state the persona can occupy, that reproduces the finding. Empty only for `intended-not-reachable`, where `blocked_at` says where reachability stops.",
+            "type": "object",
+            "required": ["path"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "array", "items": { "type": "string" } },
+              "blocked_at": { "type": "string" }
+            }
+          },
+          "evidence": {
+            "description": "Whether every element on the witness path was extracted, or whether some were inferred. An inferred element on the path is named, so the finding is never stronger than its weakest edge.",
+            "type": "object",
+            "required": ["all_extracted"],
+            "additionalProperties": false,
+            "properties": {
+              "all_extracted": { "type": "boolean" },
+              "inferred_elements": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "ruling": {
+            "description": "The owner's ruling, once made. `intended` means the intent was incomplete and the path is a feature; `unintended` means the path is a defect.",
+            "type": "object",
+            "required": ["verdict", "by"],
+            "additionalProperties": false,
+            "properties": {
+              "verdict": { "enum": ["intended", "unintended"] },
+              "by": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
