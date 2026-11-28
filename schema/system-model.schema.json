@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/tasker-systems/topos/schema/system-model.schema.json",
   "title": "Topos system model (0.2)",
-  "description": "What a target system allows, at one pinned revision and under one declared abstraction: entities and their states, guarded transitions, the persistent attributes transitions read and write, grants of capabilities to roles, and access facts relating situated actors to actions on objects. Every element carries provenance, so an extracted, inferred or probed element can always be told apart. The observe stage emits this document and never reads an intent.",
+  "description": "What a target system allows, at one pinned revision and under one declared abstraction: entities and their states, guarded transitions, the persistent attributes transitions read and write, grants of capabilities to roles, and access facts relating situated actors to actions on objects. Every element carries provenance, so an extracted, inferred or probed element can always be told apart. A probed model also records each call the target answered with something other than a boolean (`indeterminate`), and each case it could not construct (`not_constructed`), so nothing observed is dropped and nothing unanswered is read as denied. The observe stage emits this document and never reads an intent.",
   "type": "object",
   "required": [
     "schema_version",
@@ -43,6 +43,16 @@
           "description": "What the abstraction deliberately collapses or leaves out.",
           "type": "array",
           "items": { "type": "string" }
+        },
+        "document": {
+          "description": "The abstraction document a probe ran under, by name and content hash.",
+          "type": "object",
+          "required": ["name", "sha256"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "minLength": 1 },
+            "sha256": { "$ref": "#/$defs/sha256" }
+          }
         }
       }
     },
@@ -54,6 +64,16 @@
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "probe": {
+      "description": "What produced the probed elements: the probe with its version, and the fixture builder with its content hash.",
+      "type": "object",
+      "required": ["probe", "builder"],
+      "additionalProperties": false,
+      "properties": {
+        "probe": { "type": "string", "minLength": 1 },
+        "builder": { "type": "string", "minLength": 1 }
       }
     },
     "roles": {
@@ -225,6 +245,64 @@
           "action": { "$ref": "#/$defs/id" },
           "object_class": { "$ref": "#/$defs/id" },
           "allowed": { "type": "boolean" },
+          "wrote": {
+            "description": "Whether the probed call changed any row. Present only when it was checked. The change was rolled back.",
+            "type": "boolean"
+          },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "indeterminate": {
+      "description": "Calls the target answered with something other than a boolean. They are observed behaviour, not gaps, but they are not answers: none is ever read as allowed or denied, and none satisfies or violates a rule.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "actor_class",
+          "action",
+          "object_class",
+          "outcome",
+          "detail",
+          "provenance"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "actor_class": { "$ref": "#/$defs/id" },
+          "action": { "$ref": "#/$defs/id" },
+          "object_class": { "$ref": "#/$defs/id" },
+          "outcome": {
+            "description": "`error`: the call raised. `null`: it returned NULL.",
+            "enum": ["error", "null"]
+          },
+          "detail": {
+            "description": "The error class or SQLSTATE and the target's own message, or why the answer is not a boolean.",
+            "type": "string"
+          },
+          "wrote": { "type": "boolean" },
+          "provenance": { "$ref": "#/$defs/provenance" }
+        }
+      }
+    },
+    "not_constructed": {
+      "description": "Gaps in coverage: combinations a fixture builder could not construct, which name no action, and calls whose arguments a fixture did not supply. Each is a case inside the bounds that was not examined.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "actor_class", "object_class", "reason", "provenance"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "actor_class": { "$ref": "#/$defs/id" },
+          "action": { "$ref": "#/$defs/id" },
+          "object_class": { "$ref": "#/$defs/id" },
+          "reason": {
+            "description": "The builder's or the target's own refusal, or the handle the fixture did not supply.",
+            "type": "string",
+            "minLength": 1
+          },
           "provenance": { "$ref": "#/$defs/provenance" }
         }
       }
